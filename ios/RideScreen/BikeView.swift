@@ -9,6 +9,7 @@ struct BikeView: View {
     @State private var notice: BikeNotice?
     @State private var bikeToRemove: Bike?
     @State private var connectingBikeID: UUID?
+    @State private var projectingBike: Bike?
 
     var body: some View {
         List {
@@ -52,6 +53,11 @@ struct BikeView: View {
                             .buttonStyle(.borderedProminent)
                             .disabled(connectingBikeID != nil)
 
+                            Button("Project CarPlay") {
+                                projectingBike = bike
+                            }
+                            .buttonStyle(.bordered)
+
                             Button(role: .destructive) {
                                 bikeToRemove = bike
                             } label: {
@@ -69,6 +75,9 @@ struct BikeView: View {
         .sheet(isPresented: $showingAddFlow) {
             BikeAddFlowView()
                 .environmentObject(store)
+        }
+        .sheet(item: $projectingBike) { bike in
+            CarPlayProjectionView(bike: bike)
         }
         .alert(item: $notice) { notice in
             if notice.opensSettings {

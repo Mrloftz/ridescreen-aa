@@ -18,6 +18,7 @@
 		A00000000000000000000040 /* ProjectionDiagnostics.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000041 /* ProjectionDiagnostics.swift */; };
 		A00000000000000000000042 /* ReceiverStreamSummary.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000043 /* ReceiverStreamSummary.swift */; };
 		A00000000000000000000044 /* CarPlayReceiverProbe.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000045 /* CarPlayReceiverProbe.swift */; };
+		A00000000000000000000046 /* CarPlayProjectionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000047 /* CarPlayProjectionView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -36,6 +37,7 @@
 		A00000000000000000000041 /* ProjectionDiagnostics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectionDiagnostics.swift; sourceTree = "<group>"; };
 		A00000000000000000000043 /* ReceiverStreamSummary.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReceiverStreamSummary.swift; sourceTree = "<group>"; };
 		A00000000000000000000045 /* CarPlayReceiverProbe.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CarPlayReceiverProbe.swift; sourceTree = "<group>"; };
+		A00000000000000000000047 /* CarPlayProjectionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CarPlayProjectionView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -70,6 +72,7 @@
 				A00000000000000000000041 /* ProjectionDiagnostics.swift */,
 				A00000000000000000000043 /* ReceiverStreamSummary.swift */,
 				A00000000000000000000045 /* CarPlayReceiverProbe.swift */,
+				A00000000000000000000047 /* CarPlayProjectionView.swift */,
 			);
 		};
 		A00000000000000000000003 /* Products */ = {
@@ -140,6 +143,7 @@
 				A00000000000000000000040 /* ProjectionDiagnostics.swift in Sources */,
 				A00000000000000000000042 /* ReceiverStreamSummary.swift in Sources */,
 				A00000000000000000000044 /* CarPlayReceiverProbe.swift in Sources */,
+				A00000000000000000000046 /* CarPlayProjectionView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

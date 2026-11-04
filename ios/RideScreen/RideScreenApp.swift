@@ -6,6 +6,12 @@ import SwiftUI
 struct RideScreenApp: App {
     @StateObject private var recorder = TripRecorder()
     @StateObject private var bikeStore = BikeStore()
+    @StateObject private var projectionModel: ProjectionProbeModel
+
+    init() {
+        let diagnostics = ProjectionDiagnostics()
+        _projectionModel = StateObject(wrappedValue: ProjectionProbeModel(diagnostics: diagnostics))
+    }
 
     var body: some Scene {
         WindowGroup {
@@ -13,6 +19,7 @@ struct RideScreenApp: App {
                 .environmentObject(recorder)
                 .environmentObject(recorder.store)
                 .environmentObject(bikeStore)
+                .environmentObject(projectionModel)
         }
     }
 }
