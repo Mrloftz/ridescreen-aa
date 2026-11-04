@@ -23,6 +23,7 @@ logs/
 
 # Scratch copies of upstream fork sources used while porting.
 .port-src/
+.worktrees/
 
 # Local working notes only — fork scans, WIP research. Never ship to main.
 docs/work/
