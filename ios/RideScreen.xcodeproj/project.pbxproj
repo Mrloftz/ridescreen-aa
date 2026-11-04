@@ -15,6 +15,8 @@
 		A00000000000000000000032 /* BikeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000033 /* BikeView.swift */; };
 		A00000000000000000000034 /* QRScannerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000035 /* QRScannerView.swift */; };
 		A00000000000000000000037 /* TripDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000038 /* TripDetailView.swift */; };
+		A00000000000000000000040 /* ProjectionDiagnostics.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000041 /* ProjectionDiagnostics.swift */; };
+		A00000000000000000000042 /* ReceiverStreamSummary.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000043 /* ReceiverStreamSummary.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -30,6 +32,8 @@
 		A00000000000000000000035 /* QRScannerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QRScannerView.swift; sourceTree = "<group>"; };
 		A00000000000000000000036 /* RideScreen.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = RideScreen.entitlements; sourceTree = "<group>"; };
 		A00000000000000000000038 /* TripDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TripDetailView.swift; sourceTree = "<group>"; };
+		A00000000000000000000041 /* ProjectionDiagnostics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectionDiagnostics.swift; sourceTree = "<group>"; };
+		A00000000000000000000043 /* ReceiverStreamSummary.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReceiverStreamSummary.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -61,6 +65,8 @@
 				A00000000000000000000035 /* QRScannerView.swift */,
 				A00000000000000000000036 /* RideScreen.entitlements */,
 				A00000000000000000000038 /* TripDetailView.swift */,
+				A00000000000000000000041 /* ProjectionDiagnostics.swift */,
+				A00000000000000000000043 /* ReceiverStreamSummary.swift */,
 			);
 		};
 		A00000000000000000000003 /* Products */ = {
@@ -128,6 +134,8 @@
 				A00000000000000000000032 /* BikeView.swift in Sources */,
 				A00000000000000000000034 /* QRScannerView.swift in Sources */,
 				A00000000000000000000037 /* TripDetailView.swift in Sources */,
+				A00000000000000000000040 /* ProjectionDiagnostics.swift in Sources */,
+				A00000000000000000000042 /* ReceiverStreamSummary.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
