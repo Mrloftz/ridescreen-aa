@@ -1,0 +1,94 @@
+definitions:
+  scripts:
+    - &validate_project
+      name: Validate shared Xcode scheme
+      script: |
+        set -o pipefail
+        mkdir -p /tmp/xcodebuild_logs
+        xcodebuild -project ios/RideScreen.xcodeproj -list | tee /tmp/xcodebuild_logs/project-list.log
+    - &run_swift_harnesses
+      name: Run receiver checkpoint harnesses
+      script: |
+        set -e
+        mkdir -p build/swift-tests
+        xcrun swiftc -swift-version 5 -parse-as-library \
+          ios/RideScreen/ProjectionDiagnostics.swift \
+          ios/RideScreen/ReceiverStreamSummary.swift \
+          ios/Tests/ReceiverProbeCoreTests.swift \
+          -o build/swift-tests/receiver-core
+        build/swift-tests/receiver-core
+        xcrun swiftc -swift-version 5 -parse-as-library \
+          ios/RideScreen/ProjectionDiagnostics.swift \
+          ios/RideScreen/ReceiverStreamSummary.swift \
+          ios/RideScreen/CarPlayReceiverProbe.swift \
+          ios/Tests/CarPlayReceiverProbeTests.swift \
+          -o build/swift-tests/receiver-probe
+        build/swift-tests/receiver-probe
+        xcrun swiftc -swift-version 5 -parse-as-library \
+          ios/RideScreen/ProjectionDiagnostics.swift \
+          ios/RideScreen/ReceiverStreamSummary.swift \
+          ios/RideScreen/CarPlayReceiverProbe.swift \
+          ios/RideScreen/CarPlayProjectionView.swift \
+          ios/Tests/ProjectionProbeModelTests.swift \
+          -o build/swift-tests/projection-model
+        build/swift-tests/projection-model
+
+workflows:
+  ios-unsigned:
+    name: iOS unsigned diagnostic IPA
+    instance_type: mac_mini_m2
+    max_build_duration: 30
+    environment:
+      xcode: latest
+    scripts:
+      - *validate_project
+      - *run_swift_harnesses
+      - name: Build unsigned RideScreen app
+        script: |
+          set -o pipefail
+          xcodebuild \
+            -project ios/RideScreen.xcodeproj \
+            -scheme RideScreen \
+            -configuration Release \
+            -sdk iphoneos \
+            -destination 'generic/platform=iOS' \
+            -derivedDataPath "$CM_BUILD_DIR/build/ios/derived" \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            build | tee /tmp/xcodebuild_logs/ios-unsigned.log
+      - name: Package unsigned IPA
+        script: |
+          set -e
+          APP="$CM_BUILD_DIR/build/ios/derived/Build/Products/Release-iphoneos/RideScreen.app"
+          test -d "$APP"
+          mkdir -p "$CM_BUILD_DIR/build/ios/ipa/Payload"
+          ditto "$APP" "$CM_BUILD_DIR/build/ios/ipa/Payload/RideScreen.app"
+          cd "$CM_BUILD_DIR/build/ios/ipa"
+          /usr/bin/zip -qry RideScreen-unsigned.ipa Payload
+          rm -rf Payload
+    artifacts:
+      - build/ios/ipa/RideScreen-unsigned.ipa
+      - /tmp/xcodebuild_logs/*.log
+
+  ios-signed:
+    name: iOS signed diagnostic IPA
+    instance_type: mac_mini_m2
+    max_build_duration: 30
+    environment:
+      ios_signing:
+        distribution_type: development
+        bundle_identifier: dev.zanderp.opencfmoto.ios
+      xcode: latest
+    scripts:
+      - *validate_project
+      - *run_swift_harnesses
+      - name: Apply uploaded signing profiles
+        script: xcode-project use-profiles
+      - name: Build signed IPA
+        script: |
+          xcode-project build-ipa \
+            --project "$CM_BUILD_DIR/ios/RideScreen.xcodeproj" \
+            --scheme RideScreen
+    artifacts:
+      - build/ios/ipa/*.ipa
+      - /tmp/xcodebuild_logs/*.log
