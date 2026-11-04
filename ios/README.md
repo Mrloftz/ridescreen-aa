@@ -6,13 +6,19 @@ The Bike tab can scan Carbit / EasyConnect pairing QR codes that provide a Wi-Fi
 
 ## CarPlay diagnostics
 
-**CarPlay check** on a saved bike is an experimental request to the hard-coded local URL `http://127.0.0.1:8969/stream`. The iCarCast user guide does not document this URL, so a failure cannot confirm whether iCarCast is running. The check records only bounded response metadata and Wi-Fi setup result codes, never sampled video or Wi-Fi credentials. It does not send video to the dashboard, and RideScreen does not declare a CarPlay scene or entitlement.
+**CarPlay check** on a saved bike is an experimental request to the hard-coded local URL `http://127.0.0.1:8969/stream`. The iCarCast user guide does not document this URL, so a failure cannot confirm whether iCarCast is running. The check records only bounded response metadata and Wi-Fi setup result codes, never sampled video or Wi-Fi credentials. It does not send video to the dashboard.
 
 On the test iPhone:
 
 1. Join the Zontes Wi-Fi in iOS Settings if automatic setup fails. The manual screen copies the bike password for you.
 2. The **CarPlay check** tests only this undocumented local URL; it does not verify iCarCast or project video to the bike.
 3. Tap **Share diagnostic** to export the endpoint response report.
+
+## Native CarPlay scene
+
+RideScreen now registers a native CarPlay navigation scene with a `CPMapTemplate` and a MapKit map that follows the rider's location. This is a first scene integration; destination search, route calculation, and turn-by-turn maneuvers are not implemented yet. It is independent of the experimental iCarCast-to-Zontes video bridge described above.
+
+Apple requires approval for the `com.apple.developer.carplay-maps` entitlement. It is declared in `RideScreen.entitlements`, but the app will not appear as a usable navigation app on a CarPlay display until Apple enables the capability for the App ID and the signing profile contains it. The `ios-unsigned` Codemagic workflow can compile and package the code, but re-signing with a profile that lacks this entitlement cannot make CarPlay launch it. The signed workflow also needs a matching approved profile.
 
 ## Codemagic IPA builds
 

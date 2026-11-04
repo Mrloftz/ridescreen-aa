@@ -2,6 +2,8 @@
 
 **Status:** Approved on 2026-11-04.
 
+**Direction update (2026-11-05):** The user later selected a native CarPlay app. A separate initial `CPMapTemplate` scene has been added; it does not replace or satisfy this spec's independent video bridge to the Zontes dashboard. The scene currently provides a location-following map only. The iCarCast receiver framing remains an evidence-gated prerequisite before implementing video projection.
+
 ## Intent
 
 Let an iPhone rider run real CarPlay navigation through the separate iCarCast receiver app and show
@@ -31,7 +33,7 @@ CarPlay receiver or an Apple-approved head unit.
 5. A failed run identifies its last completed stage: receiver discovery, source framing, bike probe,
    control handshake, media negotiation, or frame delivery.
 
-## Non-goals for the first slice
+## Non-goals for the video-bridge first slice
 
 - Becoming a normal app inside CarPlay with `CPMapTemplate`.
 - Implementing or distributing a CarPlay receiver.
@@ -131,7 +133,7 @@ passwords, bike identifiers, receiver tokens, and video bytes.
 - Add `NSLocalNetworkUsageDescription` because RideScreen contacts and accepts connections from the
   dashboard on the local Wi-Fi network.
 - Keep the existing Hotspot Configuration entitlement for joining the saved access point.
-- Do not add CarPlay entitlements or scenes; RideScreen is not presenting UI inside certified CarPlay.
+- This spec's receiver-to-dashboard bridge does not rely on CarPlay scenes. Native CarPlay UI and its restricted entitlement are tracked separately; neither substitutes for the video transport described here.
 - The initial test keeps RideScreen in the foreground. Background continuation is a later slice because
   iOS may suspend ordinary networking, and a background-mode workaround must not misuse location or
   audio capabilities.

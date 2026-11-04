@@ -32,6 +32,7 @@ definitions:
           ios/Tests/ProjectionProbeModelTests.swift \
           -o build/swift-tests/projection-model
         build/swift-tests/projection-model
+        python3 ios/Tests/CarPlaySceneConfigurationTests.py
 
 workflows:
   ios-unsigned:
