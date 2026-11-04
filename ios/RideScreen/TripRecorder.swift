@@ -13,15 +13,19 @@ final class TripRecorder: NSObject, ObservableObject, CLLocationManagerDelegate 
     @Published private(set) var movingTime: TimeInterval = 0
     @Published private(set) var maxSpeedMetersPerSecond = 0.0
     @Published private(set) var accuracyMeters: Double?
+    @Published private(set) var needsSaveRetry = false
 
     let store: TripStore
 
     private let manager: CLLocationManager
     private var draft: RideDraft?
     private var lastLocation: CLLocation?
+    private var fallbackMotionAnchor: CLLocation?
     private var lastCheckpointAt: Date?
     private var startPendingAuthorization = false
     private var awaitingFullAccuracy = false
+    private var pendingSaveDraft: RideDraft?
+    private var pendingSaveEndedAt: Date?
 
     init(store: TripStore = TripStore()) {
         self.store = store
@@ -37,6 +41,13 @@ final class TripRecorder: NSObject, ObservableObject, CLLocationManagerDelegate 
         manager.pausesLocationUpdatesAutomatically = false
         manager.allowsBackgroundLocationUpdates = false
         manager.showsBackgroundLocationIndicator = true
+
+        if let unfinished = store.activeDraft, store.errorMessage != nil {
+            pendingSaveDraft = unfinished
+            pendingSaveEndedAt = unfinished.updatedAt
+            needsSaveRetry = true
+            statusMessage = "An unfinished ride could not be recovered. Retry saving it."
+        }
     }
 
     var needsLocationSettings: Bool {
@@ -48,6 +59,10 @@ final class TripRecorder: NSObject, ObservableObject, CLLocationManagerDelegate 
 
     func startRecording() {
         guard !isRecording else { return }
+        guard !needsSaveRetry else {
+            statusMessage = "Save the unfinished ride before starting another."
+            return
+        }
         guard store.canRecord else {
             statusMessage = store.errorMessage ?? "Ride history is unavailable."
             return
@@ -81,22 +96,58 @@ final class TripRecorder: NSObject, ObservableObject, CLLocationManagerDelegate 
         isRecording = false
         startPendingAuthorization = false
 
-        if store.finish(draft) {
+        let endedAt = Date.now
+        if store.finish(draft, at: endedAt) {
             self.draft = nil
             lastLocation = nil
+            fallbackMotionAnchor = nil
             lastCheckpointAt = nil
             statusMessage = TripRules.isMeaningful(draft)
                 ? "Ride saved on this iPhone."
                 : "Ride was too short to save."
         } else {
+            pendingSaveDraft = draft
+            pendingSaveEndedAt = endedAt
+            needsSaveRetry = true
             statusMessage = store.errorMessage ?? "Ride history could not be saved."
         }
         speedKmh = 0
         accuracyMeters = nil
     }
 
+    func retrySave() {
+        guard let pendingSaveDraft else { return }
+        guard store.finish(pendingSaveDraft, at: pendingSaveEndedAt ?? .now) else {
+            statusMessage = store.errorMessage ?? "Ride history could not be saved."
+            return
+        }
+
+        self.pendingSaveDraft = nil
+        pendingSaveEndedAt = nil
+        needsSaveRetry = false
+        draft = nil
+        lastLocation = nil
+        fallbackMotionAnchor = nil
+        lastCheckpointAt = nil
+        statusMessage = TripRules.isMeaningful(pendingSaveDraft)
+            ? "Ride saved on this iPhone."
+            : "Ride was too short to save."
+    }
+
     func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {
         authorizationStatus = manager.authorizationStatus
+
+        if isRecording {
+            let authorized = authorizationStatus == .authorizedAlways
+                || authorizationStatus == .authorizedWhenInUse
+            if !authorized || !CLLocationManager.locationServicesEnabled() {
+                stopAfterLocationAccessLoss("Location access was turned off. Enable it in iOS Settings to continue recording.")
+            } else if manager.accuracyAuthorization == .reducedAccuracy {
+                stopAfterLocationAccessLoss("Precise Location was turned off. Enable it in iOS Settings to continue recording.")
+            }
+            return
+        }
+
         guard startPendingAuthorization else { return }
 
         switch authorizationStatus {
@@ -153,6 +204,7 @@ final class TripRecorder: NSObject, ObservableObject, CLLocationManagerDelegate 
 
         draft = newDraft
         lastLocation = nil
+        fallbackMotionAnchor = nil
         lastCheckpointAt = .now
         distanceMeters = 0
         movingTime = 0
@@ -165,20 +217,29 @@ final class TripRecorder: NSObject, ObservableObject, CLLocationManagerDelegate 
         manager.startUpdatingLocation()
     }
 
+    private func stopAfterLocationAccessLoss(_ message: String) {
+        stopRecording()
+        if store.errorMessage == nil {
+            statusMessage = message
+        }
+    }
+
     private func requestFullAccuracy() {
         guard startPendingAuthorization, !awaitingFullAccuracy else { return }
         awaitingFullAccuracy = true
         statusMessage = "Ride recording needs Precise Location to measure distance accurately."
         manager.requestTemporaryFullAccuracyAuthorization(withPurposeKey: "RideRecording") { [weak self] _ in
-            guard let self else { return }
-            self.awaitingFullAccuracy = false
-            guard self.startPendingAuthorization else { return }
-            if self.manager.accuracyAuthorization == .fullAccuracy {
-                self.startPendingAuthorization = false
-                self.beginRecording()
-            } else {
-                self.startPendingAuthorization = false
-                self.statusMessage = "Turn on Precise Location for RideScreen in iOS Settings to record a route."
+            Task { @MainActor [weak self] in
+                guard let self else { return }
+                self.awaitingFullAccuracy = false
+                guard self.startPendingAuthorization else { return }
+                if self.manager.accuracyAuthorization == .fullAccuracy {
+                    self.startPendingAuthorization = false
+                    self.beginRecording()
+                } else {
+                    self.startPendingAuthorization = false
+                    self.statusMessage = "Turn on Precise Location for RideScreen in iOS Settings to record a route."
+                }
             }
         }
     }
@@ -186,13 +247,15 @@ final class TripRecorder: NSObject, ObservableObject, CLLocationManagerDelegate 
     private func record(_ location: CLLocation) {
         guard var currentDraft = draft else { return }
         let timestamp = location.timestamp
-        guard abs(timestamp.timeIntervalSinceNow) <= 15,
+        guard timestamp >= currentDraft.startedAt,
+              abs(timestamp.timeIntervalSinceNow) <= 15,
               location.horizontalAccuracy >= 0,
               location.horizontalAccuracy <= TripRules.maximumAccuracyMeters else {
             return
         }
 
         let previous = lastLocation
+        if let previous, timestamp <= previous.timestamp { return }
         let elapsed = previous.map { timestamp.timeIntervalSince($0.timestamp) } ?? 0
         let distance = previous.map { location.distance(from: $0) } ?? 0
         if elapsed > 0, distance / elapsed > TripRules.maximumPlausibleSpeedMetersPerSecond {
@@ -200,13 +263,62 @@ final class TripRecorder: NSObject, ObservableObject, CLLocationManagerDelegate 
         }
 
         let reportedSpeed = location.speed
-        let speed = reportedSpeed >= 0 && reportedSpeed.isFinite
-            ? reportedSpeed
-            : (elapsed > 0 ? distance / elapsed : 0)
-        let isMoving = speed >= TripRules.movingSpeedMetersPerSecond
-        let isBridgedGap = elapsed > 5
-            && elapsed <= TripRules.maximumGapBridge
-            && distance / elapsed >= TripRules.movingSpeedMetersPerSecond
+        let hasReportedSpeed = reportedSpeed >= 0 && reportedSpeed.isFinite
+        var speed = 0.0
+        var isMoving = false
+        var isBridgedGap = false
+        var segmentDistance = 0.0
+        var segmentMovingTime = 0.0
+
+        if hasReportedSpeed {
+            speed = reportedSpeed
+            isMoving = speed >= TripRules.movingSpeedMetersPerSecond
+            fallbackMotionAnchor = nil
+            if previous != nil {
+                if isMoving, elapsed > 0, elapsed <= 5 {
+                    segmentDistance = distance
+                    segmentMovingTime = elapsed
+                } else if elapsed > 5,
+                          elapsed <= TripRules.maximumGapBridge,
+                          distance / elapsed >= TripRules.movingSpeedMetersPerSecond {
+                    segmentDistance = distance
+                    segmentMovingTime = elapsed
+                    isBridgedGap = true
+                }
+            }
+        } else {
+            let anchor = fallbackMotionAnchor ?? previous
+            if let anchor {
+                let anchorInterval = timestamp.timeIntervalSince(anchor.timestamp)
+                if anchorInterval > TripRules.maximumGapBridge {
+                    fallbackMotionAnchor = location
+                } else if anchorInterval > 0 {
+                    let displacement = location.distance(from: anchor)
+                    let uncertainty = max(
+                        5,
+                        (anchor.horizontalAccuracy + location.horizontalAccuracy) * 1.5
+                    )
+                    if displacement > uncertainty {
+                        let estimatedSpeed = displacement / anchorInterval
+                        fallbackMotionAnchor = location
+                        if estimatedSpeed >= TripRules.movingSpeedMetersPerSecond,
+                           estimatedSpeed <= TripRules.maximumPlausibleSpeedMetersPerSecond {
+                            speed = estimatedSpeed
+                            isMoving = true
+                            isBridgedGap = anchorInterval > 5
+                            segmentDistance = displacement
+                            segmentMovingTime = anchorInterval
+                        }
+                    } else {
+                        fallbackMotionAnchor = anchor
+                    }
+                } else {
+                    fallbackMotionAnchor = location
+                }
+            } else {
+                fallbackMotionAnchor = location
+            }
+        }
 
         if !isMoving, !isBridgedGap,
            let lastMovingAt = currentDraft.lastMovingAt,
@@ -229,18 +341,11 @@ final class TripRecorder: NSObject, ObservableObject, CLLocationManagerDelegate 
             movingTime = 0
             maxSpeedMetersPerSecond = 0
             lastLocation = nil
+            fallbackMotionAnchor = nil
         }
 
-        if let previous = lastLocation {
-            let interval = timestamp.timeIntervalSince(previous.timestamp)
-            if isMoving, interval > 0, interval <= 5 {
-                currentDraft.distanceMeters += distance
-                currentDraft.movingTime += interval
-            } else if isBridgedGap {
-                currentDraft.distanceMeters += distance
-                currentDraft.movingTime += interval
-            }
-        }
+        currentDraft.distanceMeters += segmentDistance
+        currentDraft.movingTime += segmentMovingTime
 
         if isMoving || isBridgedGap {
             currentDraft.lastMovingAt = timestamp
@@ -271,7 +376,9 @@ final class TripRecorder: NSObject, ObservableObject, CLLocationManagerDelegate 
            timestamp.timeIntervalSince(lastCheckpointAt) >= TripRules.checkpointInterval {
             if store.checkpoint(currentDraft) {
                 self.lastCheckpointAt = timestamp
+                statusMessage = "Recording. Location stays active while this ride is in progress."
             } else {
+                self.lastCheckpointAt = timestamp
                 statusMessage = store.errorMessage ?? "Ride history could not be saved."
             }
         }

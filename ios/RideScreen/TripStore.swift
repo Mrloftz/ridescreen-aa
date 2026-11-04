@@ -23,10 +23,14 @@ final class TripStore: ObservableObject {
         loadArchive()
     }
 
-    var canRecord: Bool { canWrite }
+    var canRecord: Bool { canWrite && archive.activeDraft == nil }
 
     @discardableResult
     func checkpoint(_ draft: RideDraft) -> Bool {
+        if let activeDraft = archive.activeDraft, activeDraft.id != draft.id {
+            errorMessage = "An unfinished ride must be recovered before starting another ride."
+            return false
+        }
         var candidate = archive
         candidate.activeDraft = draft
         return commit(candidate)
@@ -34,6 +38,10 @@ final class TripStore: ObservableObject {
 
     @discardableResult
     func finish(_ draft: RideDraft, at endedAt: Date = .now) -> Bool {
+        if let activeDraft = archive.activeDraft, activeDraft.id != draft.id {
+            errorMessage = "An unfinished ride must be recovered before saving another ride."
+            return false
+        }
         var candidate = archive
         candidate.activeDraft = nil
         if TripRules.isMeaningful(draft) {
@@ -82,7 +90,6 @@ final class TripStore: ObservableObject {
             errorMessage = nil
             return true
         } catch {
-            canWrite = false
             errorMessage = "Ride history could not be saved. Your existing ride file was left untouched."
             return false
         }

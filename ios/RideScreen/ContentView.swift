@@ -96,6 +96,16 @@ private struct RideView: View {
                         .frame(maxWidth: .infinity, alignment: .leading)
                 }
 
+                if recorder.needsSaveRetry {
+                    Button {
+                        recorder.retrySave()
+                    } label: {
+                        Label("Retry saving ride", systemImage: "arrow.clockwise")
+                    }
+                    .buttonStyle(.bordered)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                }
+
                 Button {
                     if recorder.isRecording {
                         recorder.stopRecording()
@@ -109,7 +119,7 @@ private struct RideView: View {
                 }
                 .buttonStyle(.borderedProminent)
                 .tint(recorder.isRecording ? .red : .green)
-                .disabled(!recorder.isRecording && !store.canRecord)
+                .disabled(!recorder.isRecording && (!store.canRecord || recorder.needsSaveRetry))
             }
             .padding()
         }
