@@ -28,6 +28,12 @@ struct ContentView: View {
                 Label("Bike", systemImage: "bicycle.circle")
             }
         }
+        .tint(RideScreenTheme.gold)
+        .preferredColorScheme(.dark)
+        .toolbarBackground(RideScreenTheme.background, for: .navigationBar)
+        .toolbarBackground(.visible, for: .navigationBar)
+        .toolbarBackground(RideScreenTheme.surface, for: .tabBar)
+        .toolbarBackground(.visible, for: .tabBar)
     }
 }
 
@@ -38,27 +44,31 @@ private struct RideView: View {
 
     var body: some View {
         ScrollView {
-            VStack(spacing: 20) {
-                VStack(spacing: 4) {
+            VStack(spacing: 16) {
+                VStack(spacing: 5) {
+                    Text("CURRENT SPEED")
+                        .font(.caption.weight(.bold))
+                        .tracking(1.4)
+                        .foregroundStyle(RideScreenTheme.gold)
                     Text(recorder.speedKmh.formatted())
-                        .font(.system(size: 76, weight: .semibold, design: .rounded))
+                        .font(RideScreenTheme.displayFont(size: 76))
                         .monospacedDigit()
+                        .foregroundStyle(RideScreenTheme.primary)
                         .accessibilityLabel("Speed \(recorder.speedKmh) kilometers per hour")
                     Text("km/h")
                         .font(.headline)
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(RideScreenTheme.secondary)
                 }
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 26)
-                .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 24))
+                .frame(maxWidth: .infinity, minHeight: 174)
+                .rideCard(padding: 18, radius: 22)
 
                 HStack(spacing: 12) {
-                    MetricCard(
+                    RideMetricCard(
                         title: "Distance",
                         value: (recorder.distanceMeters / 1_000).formatted(.number.precision(.fractionLength(1))),
                         unit: "km"
                     )
-                    MetricCard(
+                    RideMetricCard(
                         title: "Moving time",
                         value: durationText(recorder.movingTime),
                         unit: nil
@@ -66,23 +76,25 @@ private struct RideView: View {
                 }
                 HStack {
                     Label(recorder.isRecording ? "Recording" : "Stopped", systemImage: recorder.isRecording ? "record.circle.fill" : "location.circle")
-                        .font(.subheadline.weight(.medium))
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(recorder.isRecording ? RideScreenTheme.live : RideScreenTheme.idle)
                     Spacer()
                     Text("Max \(Int((recorder.maxSpeedMetersPerSecond * 3.6).rounded())) km/h")
                         .font(.subheadline.monospacedDigit())
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(RideScreenTheme.secondary)
                 }
+                .rideCard(padding: 14, radius: 16)
 
                 Text(recorder.statusMessage)
                     .font(.callout)
-                    .foregroundStyle(.secondary)
-                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .foregroundStyle(RideScreenTheme.secondary)
+                    .rideCard(padding: 14, radius: 16)
 
                 if recorder.isRecording, let accuracy = recorder.accuracyMeters {
                     Text("GPS accuracy about \(Int(accuracy.rounded())) m")
                         .font(.caption)
-                        .foregroundStyle(.secondary)
-                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .foregroundStyle(RideScreenTheme.secondary)
+                        .rideCard(padding: 12, radius: 16)
                 }
 
                 if recorder.needsLocationSettings {
@@ -93,14 +105,14 @@ private struct RideView: View {
                         Label("Open Location Settings", systemImage: "gear")
                     }
                     .buttonStyle(.bordered)
-                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .tint(RideScreenTheme.gold)
                 }
 
                 if let error = store.errorMessage {
                     Label(error, systemImage: "exclamationmark.triangle.fill")
                         .font(.callout)
-                        .foregroundStyle(.red)
-                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .foregroundStyle(RideScreenTheme.error)
+                        .rideCard(padding: 14, radius: 16)
                 }
 
                 if recorder.needsSaveRetry {
@@ -110,7 +122,7 @@ private struct RideView: View {
                         Label("Retry saving ride", systemImage: "arrow.clockwise")
                     }
                     .buttonStyle(.bordered)
-                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .tint(RideScreenTheme.gold)
                 }
 
                 Button {
@@ -121,15 +133,16 @@ private struct RideView: View {
                     }
                 } label: {
                     Label(recorder.isRecording ? "Stop ride" : "Start ride", systemImage: recorder.isRecording ? "stop.fill" : "record.circle")
-                        .font(.headline)
-                        .frame(maxWidth: .infinity, minHeight: 54)
+                        .font(.headline.weight(.bold))
+                        .frame(maxWidth: .infinity, minHeight: 56)
                 }
-                .buttonStyle(.borderedProminent)
-                .tint(recorder.isRecording ? .red : .green)
+                .buttonStyle(RidePrimaryButtonStyle(isDestructive: recorder.isRecording))
                 .disabled(!recorder.isRecording && (!store.canRecord || recorder.needsSaveRetry))
             }
             .padding()
         }
+        .scrollIndicators(.hidden)
+        .background(RideScreenTheme.background.ignoresSafeArea())
     }
 
     private func durationText(_ duration: TimeInterval) -> String {
@@ -143,83 +156,62 @@ private struct RideView: View {
     }
 }
 
-private struct MetricCard: View {
-    let title: String
-    let value: String
-    let unit: String?
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text(title)
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-            HStack(alignment: .firstTextBaseline, spacing: 4) {
-                Text(value)
-                    .font(.title2.weight(.semibold).monospacedDigit())
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.75)
-                if let unit {
-                    Text(unit)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-            }
-        }
-        .frame(maxWidth: .infinity, minHeight: 72, alignment: .leading)
-        .padding(16)
-        .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 18))
-    }
-}
-
 private struct TripsView: View {
     @EnvironmentObject private var store: TripStore
 
     var body: some View {
-        List {
-            if let error = store.errorMessage {
-                Section {
+        ScrollView {
+            VStack(spacing: 14) {
+                if let error = store.errorMessage {
                     Label(error, systemImage: "exclamationmark.triangle.fill")
-                        .foregroundStyle(.red)
+                        .foregroundStyle(RideScreenTheme.error)
+                        .rideCard()
                 }
-            }
 
-            if store.trips.isEmpty {
-                VStack(spacing: 10) {
-                    Image(systemName: "bicycle")
-                        .font(.largeTitle)
-                        .foregroundStyle(.secondary)
-                    Text("No rides yet")
-                        .font(.headline)
-                    Text("Recorded rides will appear here.")
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                }
-                .frame(maxWidth: .infinity, minHeight: 180)
-                .listRowSeparator(.hidden)
-            } else {
-                ForEach(store.trips) { ride in
-                    NavigationLink {
-                        TripDetailView(ride: ride)
-                    } label: {
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text(ride.startedAt.formatted(date: .abbreviated, time: .shortened))
-                                .font(.headline)
-                            HStack(spacing: 16) {
-                                Label("\((ride.distanceMeters / 1_000).formatted(.number.precision(.fractionLength(1)))) km", systemImage: "map")
-                                Label("\(durationText(ride.movingTime)) moving", systemImage: "clock")
-                            }
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                            Text("Max \(Int((ride.maxSpeedMetersPerSecond * 3.6).rounded())) km/h")
-                                .font(.caption.monospacedDigit())
-                                .foregroundStyle(.secondary)
-                        }
-                        .padding(.vertical, 4)
+                if store.trips.isEmpty {
+                    VStack(spacing: 10) {
+                        Image(systemName: "bicycle")
+                            .font(.system(size: 38, weight: .medium))
+                            .foregroundStyle(RideScreenTheme.gold)
+                        Text("No rides yet")
+                            .font(.headline.weight(.bold))
+                            .foregroundStyle(RideScreenTheme.primary)
+                        Text("Recorded rides will appear here.")
+                            .font(.subheadline)
+                            .foregroundStyle(RideScreenTheme.secondary)
+                            .multilineTextAlignment(.center)
                     }
-                    .buttonStyle(.plain)
+                    .frame(maxWidth: .infinity, minHeight: 220)
+                    .rideCard(padding: 24)
+                } else {
+                    ForEach(store.trips) { ride in
+                        NavigationLink {
+                            TripDetailView(ride: ride)
+                        } label: {
+                            VStack(alignment: .leading, spacing: 8) {
+                                Text(ride.startedAt.formatted(date: .abbreviated, time: .shortened))
+                                    .font(.headline.weight(.bold))
+                                    .foregroundStyle(RideScreenTheme.primary)
+                                HStack(spacing: 16) {
+                                    Label("\((ride.distanceMeters / 1_000).formatted(.number.precision(.fractionLength(1)))) km", systemImage: "map")
+                                    Label("\(durationText(ride.movingTime)) moving", systemImage: "clock")
+                                }
+                                .font(.caption)
+                                .foregroundStyle(RideScreenTheme.secondary)
+                                Text("Max \(Int((ride.maxSpeedMetersPerSecond * 3.6).rounded())) km/h")
+                                    .font(.caption.monospacedDigit())
+                                    .foregroundStyle(RideScreenTheme.secondary)
+                            }
+                            .rideCard(padding: 16, radius: 18)
+                        }
+                        .buttonStyle(.plain)
+                    }
                 }
             }
+            .padding()
         }
+        .scrollIndicators(.hidden)
+        .background(RideScreenTheme.background.ignoresSafeArea())
     }
 
     private func durationText(_ duration: TimeInterval) -> String {

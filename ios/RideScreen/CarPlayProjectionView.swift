@@ -160,46 +160,112 @@ struct CarPlayProjectionView: View {
 
     var body: some View {
         NavigationStack {
-            List {
-                Section("Before probing") {
-                    prerequisite("Install and configure iCarCast")
-                    prerequisite("Join \(bike.ssid) in Wi-Fi Settings")
-                    prerequisite("Start This iPhone in iCarCast")
-                    prerequisite("Return here and tap Probe iCarCast")
-                }
+            ScrollView {
+                VStack(alignment: .leading, spacing: 16) {
+                    RideSectionHeading(
+                        title: "CarPlay receiver",
+                        subtitle: "\(bike.name) · \(bike.ssid)"
+                    )
 
-                Section("Receiver checkpoint") {
-                    LabeledContent("Stage", value: stageText)
-                    if model.state == .probing { ProgressView() }
-                    if let summary = model.summary {
-                        LabeledContent("HTTP", value: String(summary.statusCode ?? 0))
-                        LabeledContent("Content", value: summary.contentType ?? "Unknown")
-                        LabeledContent("Sample", value: "\(summary.bytesObserved) bytes")
-                        LabeledContent("Framing", value: summary.framing.rawValue)
-                        LabeledContent("NAL types", value: nalSummary(summary))
+                    VStack(alignment: .leading, spacing: 13) {
+                        Text("BEFORE PROBING")
+                            .font(.caption.weight(.bold))
+                            .tracking(0.8)
+                            .foregroundStyle(RideScreenTheme.gold)
+                        prerequisite("Install and configure iCarCast")
+                        prerequisite("Join \(bike.ssid) in Wi-Fi Settings")
+                        prerequisite("Start This iPhone in iCarCast")
+                        prerequisite("Return here and tap Probe iCarCast")
                     }
-                    if case .failed(let message) = model.state {
-                        Label(message, systemImage: "exclamationmark.triangle.fill")
-                            .foregroundStyle(.orange)
-                    }
-                }
+                    .rideCard(padding: 17)
 
-                Section {
-                    Button("Probe iCarCast") { model.startProbe() }
-                        .disabled(model.state == .probing)
-                    if case .failed = model.state {
-                        Button("Retry") { model.startProbe() }
-                    }
-                    Button("Cancel", role: .cancel) { model.cancel() }
-                        .disabled(model.state == .idle)
-                    Button("Share diagnostic") {
-                        Task {
-                            let text = await model.exportText()
-                            reportToShare = DiagnosticShare(text: text)
+                    VStack(alignment: .leading, spacing: 13) {
+                        HStack(alignment: .firstTextBaseline) {
+                            Text("RECEIVER CHECKPOINT")
+                                .font(.caption.weight(.bold))
+                                .tracking(0.8)
+                                .foregroundStyle(RideScreenTheme.gold)
+                            Spacer()
+                            Circle()
+                                .fill(statusColor)
+                                .frame(width: 9, height: 9)
+                            Text(stageText)
+                                .font(.caption.weight(.semibold))
+                                .foregroundStyle(statusColor)
+                        }
+
+                        if model.state == .probing {
+                            HStack(spacing: 10) {
+                                ProgressView().tint(RideScreenTheme.gold)
+                                Text("Checking receiver stream…")
+                                    .font(.subheadline)
+                                    .foregroundStyle(RideScreenTheme.secondary)
+                            }
+                            .padding(.vertical, 4)
+                        }
+
+                        if let summary = model.summary {
+                            checkpointRow("HTTP", value: String(summary.statusCode ?? 0))
+                            checkpointRow("Content", value: summary.contentType ?? "Unknown")
+                            checkpointRow("Sample", value: "\(summary.bytesObserved) bytes")
+                            checkpointRow("Framing", value: summary.framing.rawValue)
+                            checkpointRow("NAL types", value: nalSummary(summary))
+                        }
+
+                        if case .failed(let message) = model.state {
+                            Label(message, systemImage: "exclamationmark.triangle.fill")
+                                .font(.callout)
+                                .foregroundStyle(RideScreenTheme.error)
+                                .fixedSize(horizontal: false, vertical: true)
                         }
                     }
+                    .rideCard(padding: 17)
+
+                    Button {
+                        model.startProbe()
+                    } label: {
+                        Label("Probe iCarCast", systemImage: "dot.radiowaves.left.and.right")
+                            .font(.headline.weight(.bold))
+                            .frame(maxWidth: .infinity, minHeight: 52)
+                    }
+                    .buttonStyle(RidePrimaryButtonStyle())
+                    .disabled(model.state == .probing)
+
+                    HStack(spacing: 10) {
+                        if case .failed = model.state {
+                            Button {
+                                model.startProbe()
+                            } label: {
+                                Label("Retry", systemImage: "arrow.clockwise")
+                                    .font(.subheadline.weight(.semibold))
+                                    .frame(maxWidth: .infinity, minHeight: 48)
+                            }
+                            .buttonStyle(RideSecondaryButtonStyle())
+                        }
+
+                        Button {
+                            Task {
+                                let text = await model.exportText()
+                                reportToShare = DiagnosticShare(text: text)
+                            }
+                        } label: {
+                            Label("Share diagnostic", systemImage: "square.and.arrow.up")
+                                .font(.subheadline.weight(.semibold))
+                                .frame(maxWidth: .infinity, minHeight: 48)
+                        }
+                        .buttonStyle(RideSecondaryButtonStyle())
+                    }
+
+                    Button("Cancel probe") { model.cancel() }
+                        .font(.subheadline.weight(.medium))
+                        .foregroundStyle(RideScreenTheme.secondary)
+                        .frame(maxWidth: .infinity, minHeight: 42)
+                        .disabled(model.state == .idle)
                 }
+                .padding()
             }
+            .scrollIndicators(.hidden)
+            .background(RideScreenTheme.background.ignoresSafeArea())
             .navigationTitle("Project CarPlay")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -212,10 +278,42 @@ struct CarPlayProjectionView: View {
             }
             .onDisappear { model.cancel() }
         }
+        .toolbarBackground(RideScreenTheme.background, for: .navigationBar)
+        .toolbarBackground(.visible, for: .navigationBar)
     }
 
     private func prerequisite(_ text: String) -> some View {
-        Label(text, systemImage: "checklist")
+        HStack(alignment: .top, spacing: 10) {
+            Image(systemName: "checkmark.circle.fill")
+                .foregroundStyle(RideScreenTheme.gold)
+            Text(text)
+                .font(.subheadline)
+                .foregroundStyle(RideScreenTheme.primary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+    }
+
+    private func checkpointRow(_ title: String, value: String) -> some View {
+        HStack(alignment: .top, spacing: 12) {
+            Text(title)
+                .font(.subheadline)
+                .foregroundStyle(RideScreenTheme.secondary)
+            Spacer(minLength: 8)
+            Text(value)
+                .font(.subheadline.weight(.medium).monospacedDigit())
+                .foregroundStyle(RideScreenTheme.primary)
+                .multilineTextAlignment(.trailing)
+                .textSelection(.enabled)
+        }
+    }
+
+    private var statusColor: Color {
+        switch model.state {
+        case .idle: return RideScreenTheme.idle
+        case .probing: return RideScreenTheme.busy
+        case .ready: return RideScreenTheme.live
+        case .failed: return RideScreenTheme.error
+        }
     }
 
     private var stageText: String {

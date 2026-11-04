@@ -12,66 +12,112 @@ struct BikeView: View {
     @State private var projectingBike: Bike?
 
     var body: some View {
-        List {
-            Section {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 18) {
+                HStack(spacing: 13) {
+                    Image(systemName: "bicycle")
+                        .font(.system(size: 26, weight: .semibold))
+                        .foregroundStyle(RideScreenTheme.gold)
+                        .frame(width: 54, height: 54)
+                        .background(RideScreenTheme.elevated, in: RoundedRectangle(cornerRadius: 17))
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Garage")
+                            .font(.title.weight(.bold))
+                            .foregroundStyle(RideScreenTheme.primary)
+                        Text("Manage your connected bikes")
+                            .font(.subheadline)
+                            .foregroundStyle(RideScreenTheme.secondary)
+                    }
+                }
+
                 Button(action: requestCameraAndScan) {
                     Label("Scan bike QR", systemImage: "qrcode.viewfinder")
-                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .font(.headline.weight(.bold))
+                        .frame(maxWidth: .infinity, minHeight: 54)
                 }
+                .buttonStyle(RidePrimaryButtonStyle())
                 .accessibilityHint("Scan a MotoPlay or EasyConnect Wi-Fi pairing code")
-            }
 
-            if let error = store.errorMessage {
-                Section {
+                if let error = store.errorMessage {
                     Label(error, systemImage: "exclamationmark.triangle.fill")
-                        .foregroundStyle(.red)
+                        .foregroundStyle(RideScreenTheme.error)
+                        .rideCard()
                 }
-            }
 
-            Section("Saved bikes") {
+                RideSectionHeading(title: "Saved bikes", subtitle: "Your motorcycle Wi-Fi profiles")
+
                 if store.bikes.isEmpty {
-                    Text("No bikes saved yet. Scan the pairing QR shown on the dash.")
-                        .foregroundStyle(.secondary)
+                    VStack(alignment: .leading, spacing: 8) {
+                        Label("No bikes saved yet", systemImage: "bicycle")
+                            .font(.headline.weight(.bold))
+                            .foregroundStyle(RideScreenTheme.primary)
+                        Text("Scan the pairing QR shown on the dash to add your bike.")
+                            .font(.subheadline)
+                            .foregroundStyle(RideScreenTheme.secondary)
+                    }
+                    .rideCard(padding: 18)
                 }
 
                 ForEach(store.bikes) { bike in
-                    VStack(alignment: .leading, spacing: 10) {
-                        Text(bike.name).font(.headline)
-                        Label(bike.ssid, systemImage: "wifi")
-                            .font(.subheadline)
-                            .foregroundStyle(.secondary)
-
-                        HStack {
-                            Button {
-                                connect(bike)
-                            } label: {
-                                Label(
-                                    connectingBikeID == bike.id ? "Joining" : "Join Wi-Fi",
-                                    systemImage: "wifi"
-                                )
+                    VStack(alignment: .leading, spacing: 14) {
+                        HStack(spacing: 12) {
+                            Image(systemName: "bicycle")
+                                .font(.system(size: 21, weight: .semibold))
+                                .foregroundStyle(RideScreenTheme.gold)
+                                .frame(width: 48, height: 48)
+                                .background(RideScreenTheme.elevated, in: RoundedRectangle(cornerRadius: 15))
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text(bike.name)
+                                    .font(.headline.weight(.bold))
+                                    .foregroundStyle(RideScreenTheme.primary)
+                                    .lineLimit(2)
+                                Label(bike.ssid, systemImage: "wifi")
+                                    .font(.caption)
+                                    .foregroundStyle(RideScreenTheme.secondary)
+                                    .lineLimit(1)
+                                    .truncationMode(.middle)
                             }
-                            .buttonStyle(.borderedProminent)
-                            .disabled(connectingBikeID != nil)
-
-                            Button("Project CarPlay") {
-                                projectingBike = bike
-                            }
-                            .buttonStyle(.bordered)
-
+                            Spacer(minLength: 4)
                             Button(role: .destructive) {
                                 bikeToRemove = bike
                             } label: {
                                 Image(systemName: "trash")
+                                    .foregroundStyle(RideScreenTheme.error)
+                                    .frame(width: 40, height: 40)
+                                    .background(RideScreenTheme.elevated, in: Circle())
                             }
-                            .buttonStyle(.bordered)
                             .accessibilityLabel("Remove \(bike.name)")
                         }
+
+                        HStack(spacing: 10) {
+                            Button {
+                                connect(bike)
+                            } label: {
+                                Label(connectingBikeID == bike.id ? "Joining" : "Join Wi-Fi", systemImage: "wifi")
+                                    .font(.subheadline.weight(.bold))
+                                    .frame(maxWidth: .infinity, minHeight: 46)
+                            }
+                            .buttonStyle(RidePrimaryButtonStyle())
+                            .disabled(connectingBikeID != nil)
+
+                            Button {
+                                projectingBike = bike
+                            } label: {
+                                Label("Project", systemImage: "display")
+                                    .font(.subheadline.weight(.semibold))
+                                    .frame(maxWidth: .infinity, minHeight: 46)
+                            }
+                            .buttonStyle(RideSecondaryButtonStyle())
+                        }
                     }
-                    .padding(.vertical, 5)
+                    .rideCard(padding: 15, radius: 20)
                 }
             }
+            .padding()
         }
-        .navigationTitle("Bike")
+        .scrollIndicators(.hidden)
+        .background(RideScreenTheme.background.ignoresSafeArea())
+        .toolbar(.hidden, for: .navigationBar)
         .sheet(isPresented: $showingAddFlow) {
             BikeAddFlowView()
                 .environmentObject(store)
@@ -219,6 +265,8 @@ private struct BikeAddFlowView: View {
                 Text(scanError ?? "")
             }
         }
+        .toolbarBackground(RideScreenTheme.background, for: .navigationBar)
+        .toolbarBackground(.visible, for: .navigationBar)
     }
 }
 
@@ -233,44 +281,82 @@ private struct BikePairingReviewView: View {
     @State private var statusMessage: String?
 
     var body: some View {
-        Form {
-            Section("Detected Wi-Fi") {
-                LabeledContent("Network", value: pairing.ssid)
-                TextField("Bike name", text: $name)
-                    .textInputAutocapitalization(.words)
-            }
+        ScrollView {
+            VStack(alignment: .leading, spacing: 16) {
+                RideSectionHeading(title: "Detected Wi-Fi", subtitle: "Confirm the bike details")
 
-            Section {
-                Text("iOS will ask before joining this Wi-Fi network. This setup only joins Wi-Fi; it does not connect to the bike display or start projection.")
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
-            }
+                VStack(alignment: .leading, spacing: 14) {
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text("NETWORK")
+                            .font(.caption.weight(.semibold))
+                            .tracking(0.7)
+                            .foregroundStyle(RideScreenTheme.secondary)
+                        Label(pairing.ssid, systemImage: "wifi")
+                            .font(.body.weight(.semibold))
+                            .foregroundStyle(RideScreenTheme.primary)
+                            .textSelection(.enabled)
+                            .lineLimit(2)
+                    }
 
-            if let statusMessage {
-                Section("Status") {
-                    Text(statusMessage)
-                        .font(.callout)
+                    Rectangle()
+                        .fill(RideScreenTheme.outline)
+                        .frame(height: 1)
+
+                    TextField("Bike name", text: $name)
+                        .font(.body)
+                        .foregroundStyle(RideScreenTheme.primary)
+                        .textInputAutocapitalization(.words)
                 }
-            }
+                .rideCard(padding: 17)
 
-            Section {
+                Label {
+                    Text("iOS will ask before joining this Wi-Fi network. This setup only joins Wi-Fi; it does not connect to the bike display or start projection.")
+                        .font(.footnote)
+                        .foregroundStyle(RideScreenTheme.secondary)
+                } icon: {
+                    Image(systemName: "info.circle.fill")
+                        .foregroundStyle(RideScreenTheme.gold)
+                }
+                .rideCard(padding: 16, radius: 18)
+
+                if let statusMessage {
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("STATUS")
+                            .font(.caption.weight(.bold))
+                            .tracking(0.7)
+                            .foregroundStyle(RideScreenTheme.gold)
+                        Text(statusMessage)
+                            .font(.callout)
+                            .foregroundStyle(RideScreenTheme.primary)
+                            .textSelection(.enabled)
+                    }
+                    .rideCard(padding: 16, radius: 18)
+                }
+
                 Button {
                     saveAndJoin()
                 } label: {
-                    HStack {
-                        Spacer()
-                        if isJoining { ProgressView().padding(.trailing, 8) }
+                    HStack(spacing: 10) {
+                        if isJoining { ProgressView().tint(RideScreenTheme.onBrand) }
                         Text(savedBike == nil ? "Save and Join Wi-Fi" : "Try Wi-Fi Again")
-                        Spacer()
+                            .font(.headline.weight(.bold))
                     }
+                    .frame(maxWidth: .infinity, minHeight: 54)
                 }
+                .buttonStyle(RidePrimaryButtonStyle())
                 .disabled(isJoining)
 
                 if savedBike != nil {
                     Button("Done") { dismiss() }
+                        .font(.headline.weight(.semibold))
+                        .frame(maxWidth: .infinity, minHeight: 48)
+                        .buttonStyle(RideSecondaryButtonStyle())
                 }
             }
+            .padding()
         }
+        .scrollIndicators(.hidden)
+        .background(RideScreenTheme.background.ignoresSafeArea())
         .onAppear { name = pairing.suggestedName }
     }
 

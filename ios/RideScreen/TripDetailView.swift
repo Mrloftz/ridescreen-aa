@@ -38,43 +38,43 @@ struct TripDetailView: View {
                             .foregroundStyle(Color.red)
                         Spacer()
                         Text("by speed")
-                            .foregroundStyle(.secondary)
+                            .foregroundStyle(RideScreenTheme.secondary)
                     }
                     .font(.caption)
                 } else {
                     VStack(spacing: 8) {
                         Image(systemName: "map")
                             .font(.largeTitle)
-                            .foregroundStyle(.secondary)
+                            .foregroundStyle(RideScreenTheme.secondary)
                         Text("Route unavailable")
                             .font(.headline)
                         Text("This ride does not have enough valid GPS points to draw a route.")
                             .font(.subheadline)
-                            .foregroundStyle(.secondary)
+                            .foregroundStyle(RideScreenTheme.secondary)
                             .multilineTextAlignment(.center)
                     }
                     .frame(maxWidth: .infinity, minHeight: 210)
                     .padding()
-                    .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 20))
+                    .rideCard(padding: 20, radius: 20)
                 }
 
                 Text("\(ride.startedAt.formatted(date: .complete, time: .shortened)) – \(ride.endedAt.formatted(date: .omitted, time: .shortened))")
                     .font(.subheadline)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(RideScreenTheme.secondary)
 
                 LazyVGrid(columns: columns, spacing: 12) {
-                    RideStat(
+                    RideMetricCard(
                         title: "Distance",
                         value: (ride.distanceMeters / 1_000).formatted(.number.precision(.fractionLength(1))),
                         unit: "km"
                     )
-                    RideStat(title: "Moving time", value: durationText(ride.movingTime), unit: nil)
-                    RideStat(
+                    RideMetricCard(title: "Moving time", value: durationText(ride.movingTime), unit: nil)
+                    RideMetricCard(
                         title: "Average speed",
                         value: averageSpeedKmh.formatted(.number.precision(.fractionLength(1))),
                         unit: "km/h"
                     )
-                    RideStat(
+                    RideMetricCard(
                         title: "Maximum speed",
                         value: (ride.maxSpeedMetersPerSecond * 3.6).formatted(.number.precision(.fractionLength(0))),
                         unit: "km/h"
@@ -85,6 +85,7 @@ struct TripDetailView: View {
         }
         .navigationTitle("Ride details")
         .navigationBarTitleDisplayMode(.inline)
+        .background(RideScreenTheme.background.ignoresSafeArea())
     }
 
     private func durationText(_ duration: TimeInterval) -> String {
@@ -98,34 +99,6 @@ struct TripDetailView: View {
     }
 }
 
-private struct RideStat: View {
-    let title: String
-    let value: String
-    let unit: String?
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text(title)
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-            HStack(alignment: .firstTextBaseline, spacing: 4) {
-                Text(value)
-                    .font(.title2.weight(.semibold).monospacedDigit())
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.75)
-                if let unit {
-                    Text(unit)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-            }
-        }
-        .frame(maxWidth: .infinity, minHeight: 72, alignment: .leading)
-        .padding(16)
-        .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 18))
-    }
-}
-
 private struct TripRouteMap: UIViewRepresentable {
     let points: [TrackPoint]
     let maximumSpeed: Double
@@ -136,6 +109,7 @@ private struct TripRouteMap: UIViewRepresentable {
         let map = MKMapView(frame: .zero)
         map.delegate = context.coordinator
         map.isRotateEnabled = false
+        map.overrideUserInterfaceStyle = .dark
         context.coordinator.render(points: points, maximumSpeed: maximumSpeed, on: map)
         return map
     }

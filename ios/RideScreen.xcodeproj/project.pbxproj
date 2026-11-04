@@ -19,6 +19,9 @@
 		A00000000000000000000042 /* ReceiverStreamSummary.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000043 /* ReceiverStreamSummary.swift */; };
 		A00000000000000000000044 /* CarPlayReceiverProbe.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000045 /* CarPlayReceiverProbe.swift */; };
 		A00000000000000000000046 /* CarPlayProjectionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000047 /* CarPlayProjectionView.swift */; };
+		A00000000000000000000048 /* RideScreenTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000049 /* RideScreenTheme.swift */; };
+		A00000000000000000000050 /* ArchivoBlack-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000051 /* ArchivoBlack-Regular.ttf */; };
+		A00000000000000000000053 /* OFL-Archivo.txt in Resources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000054 /* OFL-Archivo.txt */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -38,6 +41,9 @@
 		A00000000000000000000043 /* ReceiverStreamSummary.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReceiverStreamSummary.swift; sourceTree = "<group>"; };
 		A00000000000000000000045 /* CarPlayReceiverProbe.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CarPlayReceiverProbe.swift; sourceTree = "<group>"; };
 		A00000000000000000000047 /* CarPlayProjectionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CarPlayProjectionView.swift; sourceTree = "<group>"; };
+		A00000000000000000000049 /* RideScreenTheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RideScreenTheme.swift; sourceTree = "<group>"; };
+		A00000000000000000000051 /* ArchivoBlack-Regular.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = ArchivoBlack-Regular.ttf; sourceTree = "<group>"; };
+		A00000000000000000000054 /* OFL-Archivo.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = OFL-Archivo.txt; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -73,7 +79,18 @@
 				A00000000000000000000043 /* ReceiverStreamSummary.swift */,
 				A00000000000000000000045 /* CarPlayReceiverProbe.swift */,
 				A00000000000000000000047 /* CarPlayProjectionView.swift */,
+				A00000000000000000000049 /* RideScreenTheme.swift */,
+				A00000000000000000000052 /* Fonts */,
 			);
+		};
+		A00000000000000000000052 /* Fonts */ = {
+			isa = PBXGroup;
+			children = (
+				A00000000000000000000051 /* ArchivoBlack-Regular.ttf */,
+				A00000000000000000000054 /* OFL-Archivo.txt */,
+			);
+			path = Fonts;
+			sourceTree = "<group>";
 		};
 		A00000000000000000000003 /* Products */ = {
 			isa = PBXGroup;
@@ -123,7 +140,7 @@
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
-		A00000000000000000000009 /* Resources */ = {isa = PBXResourcesBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
+		A00000000000000000000009 /* Resources */ = {isa = PBXResourcesBuildPhase; buildActionMask = 2147483647; files = (A00000000000000000000050 /* ArchivoBlack-Regular.ttf in Resources */, A00000000000000000000053 /* OFL-Archivo.txt in Resources */,); runOnlyForDeploymentPostprocessing = 0; };
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
@@ -144,6 +161,7 @@
 				A00000000000000000000042 /* ReceiverStreamSummary.swift in Sources */,
 				A00000000000000000000044 /* CarPlayReceiverProbe.swift in Sources */,
 				A00000000000000000000046 /* CarPlayProjectionView.swift in Sources */,
+				A00000000000000000000048 /* RideScreenTheme.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
