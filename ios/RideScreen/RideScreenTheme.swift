@@ -17,7 +17,7 @@ enum RideScreenTheme {
     static let idle = Color(hex: 0x8E9C90)
 
     static func displayFont(size: CGFloat) -> Font {
-        .custom("ArchivoBlack-Regular", fixedSize: size, relativeTo: .largeTitle)
+        .custom("ArchivoBlack-Regular", size: size, relativeTo: .largeTitle)
     }
 }
 

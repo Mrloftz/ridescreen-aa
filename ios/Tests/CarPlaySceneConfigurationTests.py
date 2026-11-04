@@ -10,6 +10,7 @@ INFO_PLIST = ROOT / "ios/RideScreen/Info.plist"
 ENTITLEMENTS = ROOT / "ios/RideScreen/RideScreen.entitlements"
 PROJECT = ROOT / "ios/RideScreen.xcodeproj/project.pbxproj"
 SCENE_SOURCE = ROOT / "ios/RideScreen/CarPlaySceneDelegate.swift"
+THEME_SOURCE = ROOT / "ios/RideScreen/RideScreenTheme.swift"
 
 
 def require(condition: bool, message: str) -> None:
@@ -54,6 +55,11 @@ recenter_method = scene_source.split("func recenterOnRider()", 1)[-1].split("\n 
 require(
     "setUserTrackingMode(.follow, animated: true)" in recenter_method,
     "recenter action must restore continuous rider tracking",
+)
+theme_source = THEME_SOURCE.read_text(encoding="utf-8")
+require(
+    '.custom("ArchivoBlack-Regular", size: size, relativeTo: .largeTitle)' in theme_source,
+    "display font must use the Font.custom size: API label",
 )
 
 print("CarPlaySceneConfigurationTests passed")
