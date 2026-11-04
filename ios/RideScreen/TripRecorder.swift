@@ -27,7 +27,8 @@ final class TripRecorder: NSObject, ObservableObject, CLLocationManagerDelegate 
     private var pendingSaveDraft: RideDraft?
     private var pendingSaveEndedAt: Date?
 
-    init(store: TripStore = TripStore()) {
+    init(store: TripStore? = nil) {
+        let store = store ?? TripStore()
         self.store = store
         let manager = CLLocationManager()
         self.manager = manager
