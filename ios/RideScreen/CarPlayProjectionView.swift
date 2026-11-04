@@ -156,8 +156,7 @@ struct CarPlayProjectionView: View {
     @Environment(\.dismiss) private var dismiss
     let bike: Bike
 
-    @State private var report = ""
-    @State private var showingShare = false
+    @State private var reportToShare: DiagnosticShare?
 
     var body: some View {
         NavigationStack {
@@ -195,8 +194,8 @@ struct CarPlayProjectionView: View {
                         .disabled(model.state == .idle)
                     Button("Share diagnostic") {
                         Task {
-                            report = await model.exportText()
-                            showingShare = true
+                            let text = await model.exportText()
+                            reportToShare = DiagnosticShare(text: text)
                         }
                     }
                 }
@@ -208,8 +207,8 @@ struct CarPlayProjectionView: View {
                     Button("Done") { dismiss() }
                 }
             }
-            .sheet(isPresented: $showingShare) {
-                ActivityShareView(items: [report])
+            .sheet(item: $reportToShare) { report in
+                ActivityShareView(items: [report.text])
             }
             .onDisappear { model.cancel() }
         }
@@ -234,6 +233,11 @@ struct CarPlayProjectionView: View {
             .joined(separator: ", ")
         return value.isEmpty ? "None detected" : value
     }
+}
+
+private struct DiagnosticShare: Identifiable {
+    let id = UUID()
+    let text: String
 }
 
 private struct ActivityShareView: UIViewControllerRepresentable {
