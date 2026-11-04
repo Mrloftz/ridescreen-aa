@@ -63,7 +63,10 @@ final class ProjectionProbeModel: ObservableObject {
         state = .probing
         task = Task { [weak self] in
             guard let self else { return }
-            await diagnostics.record(stage: .receiverDiscovery, message: "Probing loopback receiver")
+            await diagnostics.record(
+                stage: .receiverDiscovery,
+                message: "Checking hard-coded local URL http://127.0.0.1:8969/stream"
+            )
             do {
                 let result = try await probe()
                 guard activeRunID == runID else { return }
@@ -84,7 +87,7 @@ final class ProjectionProbeModel: ObservableObject {
                 }
             } catch {
                 guard activeRunID == runID else { return }
-                let message = "Receiver probe failed. Start iCarCast This iPhone and retry."
+                let message = "The local URL check failed unexpectedly. This result does not confirm whether iCarCast is running."
                 await diagnostics.record(stage: .error, message: message)
                 state = .failed(message)
             }
@@ -93,6 +96,13 @@ final class ProjectionProbeModel: ObservableObject {
 
     func cancel() {
         cancel(resetState: true)
+    }
+
+    func recordWiFiResult(_ message: String, ssidLength: Int) async {
+        await diagnostics.record(
+            stage: .bikeProbe,
+            message: "NEHotspotConfiguration; SSID length=\(ssidLength); \(message)"
+        )
     }
 
     func exportText() async -> String {
@@ -112,11 +122,11 @@ final class ProjectionProbeModel: ObservableObject {
     private static func correctiveMessage(for error: ReceiverProbeError) -> String {
         switch error {
         case .notRunning:
-            return "iCarCast was not found. Start This iPhone in iCarCast, return here, and retry."
+            return "No usable response from the hard-coded local URL 127.0.0.1:8969/stream. This does not confirm whether iCarCast is running."
         case .invalidResponse:
-            return "iCarCast returned an unexpected response. Keep it running and retry once."
+            return "The local URL responded with data RideScreen cannot read. This check does not verify iCarCast or the bike display."
         case .timedOut:
-            return "iCarCast did not send stream data in time. Restart This iPhone and retry."
+            return "No data arrived from the hard-coded local URL 127.0.0.1:8969/stream. This does not confirm whether iCarCast is running."
         case .cancelled:
             return "Probe cancelled."
         }
@@ -163,25 +173,24 @@ struct CarPlayProjectionView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 16) {
                     RideSectionHeading(
-                        title: "CarPlay receiver",
+                        title: "CarPlay diagnostics",
                         subtitle: "\(bike.name) · \(bike.ssid)"
                     )
 
                     VStack(alignment: .leading, spacing: 13) {
-                        Text("BEFORE PROBING")
+                        Text("ABOUT THIS CHECK")
                             .font(.caption.weight(.bold))
                             .tracking(0.8)
                             .foregroundStyle(RideScreenTheme.gold)
-                        prerequisite("Install and configure iCarCast")
-                        prerequisite("Join \(bike.ssid) in Wi-Fi Settings")
-                        prerequisite("Start This iPhone in iCarCast")
-                        prerequisite("Return here and tap Probe iCarCast")
+                        diagnosticNote("RideScreen sends an experimental request to 127.0.0.1:8969/stream on this iPhone.")
+                        diagnosticNote("This undocumented local URL does not confirm whether iCarCast is running.")
+                        diagnosticNote("This check does not send CarPlay video to the Zontes display.")
                     }
                     .rideCard(padding: 17)
 
                     VStack(alignment: .leading, spacing: 13) {
                         HStack(alignment: .firstTextBaseline) {
-                            Text("RECEIVER CHECKPOINT")
+                            Text("LOCAL URL RESULT")
                                 .font(.caption.weight(.bold))
                                 .tracking(0.8)
                                 .foregroundStyle(RideScreenTheme.gold)
@@ -197,7 +206,7 @@ struct CarPlayProjectionView: View {
                         if model.state == .probing {
                             HStack(spacing: 10) {
                                 ProgressView().tint(RideScreenTheme.gold)
-                                Text("Checking receiver stream…")
+                                Text("Checking local URL…")
                                     .font(.subheadline)
                                     .foregroundStyle(RideScreenTheme.secondary)
                             }
@@ -224,7 +233,7 @@ struct CarPlayProjectionView: View {
                     Button {
                         model.startProbe()
                     } label: {
-                        Label("Probe iCarCast", systemImage: "dot.radiowaves.left.and.right")
+                        Label("Check local URL", systemImage: "dot.radiowaves.left.and.right")
                             .font(.headline.weight(.bold))
                             .frame(maxWidth: .infinity, minHeight: 52)
                     }
@@ -266,7 +275,7 @@ struct CarPlayProjectionView: View {
             }
             .scrollIndicators(.hidden)
             .background(RideScreenTheme.background.ignoresSafeArea())
-            .navigationTitle("Project CarPlay")
+            .navigationTitle("CarPlay diagnostics")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
@@ -282,9 +291,9 @@ struct CarPlayProjectionView: View {
         .toolbarBackground(.visible, for: .navigationBar)
     }
 
-    private func prerequisite(_ text: String) -> some View {
+    private func diagnosticNote(_ text: String) -> some View {
         HStack(alignment: .top, spacing: 10) {
-            Image(systemName: "checkmark.circle.fill")
+            Image(systemName: "info.circle.fill")
                 .foregroundStyle(RideScreenTheme.gold)
             Text(text)
                 .font(.subheadline)
@@ -318,10 +327,10 @@ struct CarPlayProjectionView: View {
 
     private var stageText: String {
         switch model.state {
-        case .idle: return "Ready to probe"
-        case .probing: return "Receiver discovery"
-        case .ready: return "Receiver stream detected"
-        case .failed: return "Probe failed"
+        case .idle: return "Ready to check"
+        case .probing: return "Checking URL"
+        case .ready: return "Local URL responded"
+        case .failed: return "No usable response"
         }
     }
 

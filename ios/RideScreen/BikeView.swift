@@ -5,11 +5,13 @@ import UIKit
 
 struct BikeView: View {
     @EnvironmentObject private var store: BikeStore
+    @EnvironmentObject private var projectionModel: ProjectionProbeModel
     @State private var showingAddFlow = false
     @State private var notice: BikeNotice?
     @State private var bikeToRemove: Bike?
     @State private var connectingBikeID: UUID?
     @State private var projectingBike: Bike?
+    @State private var manualWiFiSetup: BikeManualWiFiSetup?
 
     var body: some View {
         ScrollView {
@@ -103,11 +105,24 @@ struct BikeView: View {
                             Button {
                                 projectingBike = bike
                             } label: {
-                                Label("Project", systemImage: "display")
+                                Label("CarPlay check", systemImage: "waveform.path.ecg")
                                     .font(.subheadline.weight(.semibold))
                                     .frame(maxWidth: .infinity, minHeight: 46)
                             }
                             .buttonStyle(RideSecondaryButtonStyle())
+                        }
+
+                        Button {
+                            showManualWiFiSetup(for: bike)
+                        } label: {
+                            Label("Manual Wi-Fi setup", systemImage: "list.number")
+                                .font(.subheadline.weight(.semibold))
+                                .frame(maxWidth: .infinity, minHeight: 42)
+                        }
+                        .buttonStyle(RideSecondaryButtonStyle())
+
+                        if let setup = manualWiFiSetup, setup.bike.id == bike.id {
+                            BikeManualWiFiInstructions(ssid: bike.ssid, password: setup.password)
                         }
                     }
                     .rideCard(padding: 15, radius: 20)
@@ -187,7 +202,16 @@ struct BikeView: View {
             do {
                 let password = try store.password(for: bike)
                 let result = await BikeWiFiConnector.join(ssid: bike.ssid, password: password)
-                notice = BikeNotice(title: "Bike Wi-Fi", message: result.message)
+                await projectionModel.recordWiFiResult(result.message, ssidLength: bike.ssid.utf8.count)
+                if case .failed(let message) = result {
+                    manualWiFiSetup = BikeManualWiFiSetup(bike: bike, password: password)
+                    notice = BikeNotice(
+                        title: "Automatic Wi-Fi setup failed",
+                        message: "\(message) Manual steps are now shown on the bike card."
+                    )
+                } else {
+                    notice = BikeNotice(title: "Bike Wi-Fi", message: result.message)
+                }
             } catch {
                 notice = BikeNotice(title: "Bike Wi-Fi", message: error.localizedDescription)
             }
@@ -199,10 +223,24 @@ struct BikeView: View {
         do {
             try store.remove(bike)
             BikeWiFiConnector.remove(ssid: bike.ssid)
+            if manualWiFiSetup?.bike.id == bike.id {
+                manualWiFiSetup = nil
+            }
         } catch {
             notice = BikeNotice(title: "Could not remove bike", message: error.localizedDescription)
         }
         bikeToRemove = nil
+    }
+
+    private func showManualWiFiSetup(for bike: Bike) {
+        do {
+            manualWiFiSetup = BikeManualWiFiSetup(
+                bike: bike,
+                password: try store.password(for: bike)
+            )
+        } catch {
+            notice = BikeNotice(title: "Wi-Fi password unavailable", message: error.localizedDescription)
+        }
     }
 
     private func openAppSettings() {
@@ -272,6 +310,7 @@ private struct BikeAddFlowView: View {
 
 private struct BikePairingReviewView: View {
     @EnvironmentObject private var store: BikeStore
+    @EnvironmentObject private var projectionModel: ProjectionProbeModel
     @Environment(\.dismiss) private var dismiss
     let pairing: BikePairing
 
@@ -279,6 +318,7 @@ private struct BikePairingReviewView: View {
     @State private var savedBike: Bike?
     @State private var isJoining = false
     @State private var statusMessage: String?
+    @State private var showingManualWiFiInstructions = false
 
     var body: some View {
         ScrollView {
@@ -310,7 +350,7 @@ private struct BikePairingReviewView: View {
                 .rideCard(padding: 17)
 
                 Label {
-                    Text("iOS will ask before joining this Wi-Fi network. This setup only joins Wi-Fi; it does not connect to the bike display or start projection.")
+                    Text("RideScreen asks iOS to join this Wi-Fi. If automatic setup fails, use the manual Wi-Fi steps below. Joining Wi-Fi alone does not connect to the bike display or send CarPlay to it.")
                         .font(.footnote)
                         .foregroundStyle(RideScreenTheme.secondary)
                 } icon: {
@@ -333,6 +373,10 @@ private struct BikePairingReviewView: View {
                     .rideCard(padding: 16, radius: 18)
                 }
 
+                if showingManualWiFiInstructions {
+                    BikeManualWiFiInstructions(ssid: pairing.ssid, password: pairing.password)
+                }
+
                 Button {
                     saveAndJoin()
                 } label: {
@@ -347,6 +391,18 @@ private struct BikePairingReviewView: View {
                 .disabled(isJoining)
 
                 if savedBike != nil {
+                    Button {
+                        showingManualWiFiInstructions.toggle()
+                    } label: {
+                        Label(
+                            showingManualWiFiInstructions ? "Hide Wi-Fi instructions" : "Manual Wi-Fi setup",
+                            systemImage: "list.number"
+                        )
+                        .font(.subheadline.weight(.semibold))
+                        .frame(maxWidth: .infinity, minHeight: 48)
+                    }
+                    .buttonStyle(RideSecondaryButtonStyle())
+
                     Button("Done") { dismiss() }
                         .font(.headline.weight(.semibold))
                         .frame(maxWidth: .infinity, minHeight: 48)
@@ -375,7 +431,11 @@ private struct BikePairingReviewView: View {
                 }
                 let password = try store.password(for: bike)
                 let result = await BikeWiFiConnector.join(ssid: bike.ssid, password: password)
+                await projectionModel.recordWiFiResult(result.message, ssidLength: bike.ssid.utf8.count)
                 statusMessage = result.message
+                if case .failed = result {
+                    showingManualWiFiInstructions = true
+                }
             } catch {
                 statusMessage = error.localizedDescription
             }
@@ -388,4 +448,50 @@ private struct BikeNotice: Identifiable {
     let title: String
     let message: String
     var opensSettings = false
+}
+
+private struct BikeManualWiFiSetup {
+    let bike: Bike
+    let password: String
+}
+
+private struct BikeManualWiFiInstructions: View {
+    let ssid: String
+    let password: String
+
+    @State private var passwordCopied = false
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Label("Join through iPhone Wi-Fi settings", systemImage: "wifi")
+                .font(.subheadline.weight(.bold))
+                .foregroundStyle(RideScreenTheme.primary)
+
+            Text("Copy the password, open Settings > Wi-Fi, and choose \(ssid). Paste the password if iOS asks, then return to RideScreen.")
+                .font(.footnote)
+                .foregroundStyle(RideScreenTheme.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+
+            Button {
+                UIPasteboard.general.string = password
+                passwordCopied = true
+            } label: {
+                Label(passwordCopied ? "Password copied" : "Copy Wi-Fi password", systemImage: passwordCopied ? "checkmark" : "doc.on.doc")
+                    .font(.subheadline.weight(.bold))
+                    .frame(maxWidth: .infinity, minHeight: 44)
+            }
+            .buttonStyle(RidePrimaryButtonStyle())
+
+            Text("Check Settings > Wi-Fi to confirm the iPhone joined this network. RideScreen cannot verify the connection from this screen.")
+                .font(.caption)
+                .foregroundStyle(RideScreenTheme.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .padding(13)
+        .background(RideScreenTheme.elevated, in: RoundedRectangle(cornerRadius: 16))
+        .overlay {
+            RoundedRectangle(cornerRadius: 16)
+                .stroke(RideScreenTheme.outline, lineWidth: 1)
+        }
+    }
 }

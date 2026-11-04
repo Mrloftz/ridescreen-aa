@@ -2,17 +2,17 @@
 
 The iOS app is a native SwiftUI application. Build and run it on macOS with Xcode by opening `RideScreen.xcodeproj` and selecting the RideScreen scheme.
 
-The Bike tab can scan Carbit / EasyConnect pairing QR codes that provide a Wi-Fi access point, save a bike locally, and ask iOS to join the network. Camera access is requested only when scanning. Bike names and SSIDs are stored in Application Support; Wi-Fi passwords are stored in Keychain. iOS presents its own approval prompt and remembers the configured network until it is removed from the Bike tab or iOS Settings. Wi-Fi Direct and phone-hotspot QR flows are not supported yet.
+The Bike tab can scan Carbit / EasyConnect pairing QR codes that provide a Wi-Fi access point, save a bike locally, and ask iOS to join the network. If that request fails, RideScreen shows the iOS error code and manual steps to copy the password and join in Settings > Wi-Fi. Camera access is requested only when scanning. Bike names and SSIDs are stored in Application Support; Wi-Fi passwords are stored in Keychain. iOS presents its own approval prompt and remembers the configured network until it is removed from the Bike tab or iOS Settings. Wi-Fi Direct and phone-hotspot QR flows are not supported yet.
 
-## CarPlay receiver checkpoint
+## CarPlay diagnostics
 
-**Project CarPlay** on a saved bike checks the separate iCarCast app at the fixed loopback endpoint `127.0.0.1:8969`. It records only bounded stream metadata (status, content type, byte count, framing, and H.264 NAL types), never sampled video or Wi-Fi credentials. This checkpoint does not yet send video to the dashboard and RideScreen does not declare a CarPlay scene or entitlement.
+**CarPlay check** on a saved bike is an experimental request to the hard-coded local URL `http://127.0.0.1:8969/stream`. The iCarCast user guide does not document this URL, so a failure cannot confirm whether iCarCast is running. The check records only bounded response metadata and Wi-Fi setup result codes, never sampled video or Wi-Fi credentials. It does not send video to the dashboard, and RideScreen does not declare a CarPlay scene or entitlement.
 
 On the test iPhone:
 
-1. Install and configure iCarCast, join the Zontes Wi-Fi, then start **This iPhone** in iCarCast.
-2. Return to RideScreen, open the saved Zontes 368E, tap **Project CarPlay**, then **Probe iCarCast**.
-3. Tap **Share diagnostic** and send the exported text report after either success or failure.
+1. Join the Zontes Wi-Fi in iOS Settings if automatic setup fails. The manual screen copies the bike password for you.
+2. The **CarPlay check** tests only this undocumented local URL; it does not verify iCarCast or project video to the bike.
+3. Tap **Share diagnostic** to export the endpoint response report.
 
 ## Codemagic IPA builds
 
@@ -24,4 +24,4 @@ The opt-in `ios-signed` workflow requires a matching development certificate and
 
 Tap a saved ride in Trips to open its route map and distance, moving time, average speed, and maximum speed. The route is drawn from the saved GPS points and colored by speed. MapKit supplies the basemap; the saved route remains on the device, but map tiles may require an internet connection.
 
-The current development host is Windows and cannot run Xcode. Foundation-only Swift harnesses can run in the Swift Docker image, while Codemagic performs the authoritative Xcode build. Device testing is required for the iCarCast receiver endpoint, GPS accuracy, background recording, camera permission behavior, Hotspot Configuration signing, and QR / Wi-Fi behavior with the Zontes dashboard.
+The current development host is Windows and cannot run Xcode. Codemagic performs the Xcode build. Device testing is required for the experimental local URL check, GPS accuracy, background recording, camera permission behavior, Hotspot Configuration signing, and QR / Wi-Fi behavior with the Zontes dashboard.

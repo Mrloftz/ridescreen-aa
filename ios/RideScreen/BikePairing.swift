@@ -290,17 +290,17 @@ enum BikeWiFiConnector {
     private static func message(for error: NSError) -> String {
         guard error.domain == NEHotspotConfigurationErrorDomain,
               let code = NEHotspotConfigurationError(rawValue: error.code) else {
-            return "iOS could not add this Wi-Fi network. Check the bike is nearby and try again."
+            return "iOS could not add this Wi-Fi network (\(error.domain), code \(error.code)). Try Manual Wi-Fi setup."
         }
         switch code {
         case .userDenied:
-            return "You declined the iOS Wi-Fi request. You can try again whenever you are ready."
+            return "The iOS Wi-Fi request was declined (code \(error.code)). Try again or use Manual Wi-Fi setup."
         case .invalidWPAPassphrase, .invalidWEPPassphrase, .invalidSSID:
-            return "iOS rejected the Wi-Fi details. Check the bike QR code and scan it again."
+            return "iOS rejected the Wi-Fi details (code \(error.code)). Check the bike QR code and try Manual Wi-Fi setup."
         case .applicationIsNotInForeground:
-            return "Keep RideScreen open and try joining the bike Wi-Fi again."
+            return "RideScreen must stay in the foreground to request Wi-Fi (code \(error.code)). Try again or use Manual Wi-Fi setup."
         default:
-            return "iOS could not add this Wi-Fi network. Check the bike is nearby and try again."
+            return "iOS could not add this Wi-Fi network (code \(error.code)). Try Manual Wi-Fi setup."
         }
     }
 }
