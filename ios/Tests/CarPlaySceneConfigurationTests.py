@@ -49,5 +49,11 @@ require(
     "CarPlaySceneDelegate.swift in Sources" in project,
     "CarPlay scene delegate is not compiled into the app target",
 )
+scene_source = SCENE_SOURCE.read_text(encoding="utf-8")
+recenter_method = scene_source.split("func recenterOnRider()", 1)[-1].split("\n    }", 1)[0]
+require(
+    "setUserTrackingMode(.follow, animated: true)" in recenter_method,
+    "recenter action must restore continuous rider tracking",
+)
 
 print("CarPlaySceneConfigurationTests passed")

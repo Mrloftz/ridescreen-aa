@@ -48,17 +48,6 @@ private final class CarPlayMapViewController: UIViewController {
     }
 
     func recenterOnRider() {
-        if let location = mapView.userLocation.location {
-            mapView.setRegion(
-                MKCoordinateRegion(
-                    center: location.coordinate,
-                    latitudinalMeters: 1_500,
-                    longitudinalMeters: 1_500
-                ),
-                animated: true
-            )
-        } else {
-            mapView.userTrackingMode = .follow
-        }
+        mapView.setUserTrackingMode(.follow, animated: true)
     }
 }
