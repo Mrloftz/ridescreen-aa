@@ -21,6 +21,7 @@ final class TripRecorder: NSObject, ObservableObject, CLLocationManagerDelegate 
     private var lastLocation: CLLocation?
     private var lastCheckpointAt: Date?
     private var startPendingAuthorization = false
+    private var awaitingFullAccuracy = false
 
     init(store: TripStore = TripStore()) {
         self.store = store
@@ -42,6 +43,7 @@ final class TripRecorder: NSObject, ObservableObject, CLLocationManagerDelegate 
         !CLLocationManager.locationServicesEnabled()
             || authorizationStatus == .denied
             || authorizationStatus == .restricted
+            || manager.accuracyAuthorization == .reducedAccuracy
     }
 
     func startRecording() {
@@ -58,7 +60,13 @@ final class TripRecorder: NSObject, ObservableObject, CLLocationManagerDelegate 
             statusMessage = "Allow location access to start recording."
             manager.requestWhenInUseAuthorization()
         case .authorizedAlways, .authorizedWhenInUse:
-            beginRecording()
+            startPendingAuthorization = true
+            if manager.accuracyAuthorization == .reducedAccuracy {
+                requestFullAccuracy()
+            } else {
+                startPendingAuthorization = false
+                beginRecording()
+            }
         case .denied, .restricted:
             statusMessage = "Enable location access for RideScreen in iOS Settings."
         @unknown default:
@@ -93,10 +101,16 @@ final class TripRecorder: NSObject, ObservableObject, CLLocationManagerDelegate 
 
         switch authorizationStatus {
         case .authorizedAlways, .authorizedWhenInUse:
-            startPendingAuthorization = false
-            beginRecording()
+            if manager.accuracyAuthorization == .fullAccuracy {
+                startPendingAuthorization = false
+                awaitingFullAccuracy = false
+                beginRecording()
+            } else {
+                requestFullAccuracy()
+            }
         case .denied, .restricted:
             startPendingAuthorization = false
+            awaitingFullAccuracy = false
             statusMessage = "Enable location access for RideScreen in iOS Settings."
         case .notDetermined:
             break
@@ -125,6 +139,7 @@ final class TripRecorder: NSObject, ObservableObject, CLLocationManagerDelegate 
     }
 
     private func beginRecording() {
+        guard !isRecording else { return }
         guard store.canRecord else {
             statusMessage = store.errorMessage ?? "Ride history is unavailable."
             return
@@ -148,6 +163,24 @@ final class TripRecorder: NSObject, ObservableObject, CLLocationManagerDelegate 
         isRecording = true
         statusMessage = "Recording. Location stays active while this ride is in progress."
         manager.startUpdatingLocation()
+    }
+
+    private func requestFullAccuracy() {
+        guard startPendingAuthorization, !awaitingFullAccuracy else { return }
+        awaitingFullAccuracy = true
+        statusMessage = "Ride recording needs Precise Location to measure distance accurately."
+        manager.requestTemporaryFullAccuracyAuthorization(withPurposeKey: "RideRecording") { [weak self] _ in
+            guard let self else { return }
+            self.awaitingFullAccuracy = false
+            guard self.startPendingAuthorization else { return }
+            if self.manager.accuracyAuthorization == .fullAccuracy {
+                self.startPendingAuthorization = false
+                self.beginRecording()
+            } else {
+                self.startPendingAuthorization = false
+                self.statusMessage = "Turn on Precise Location for RideScreen in iOS Settings to record a route."
+            }
+        }
     }
 
     private func record(_ location: CLLocation) {

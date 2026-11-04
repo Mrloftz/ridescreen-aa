@@ -24,6 +24,11 @@
 	<true/>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>RideScreen uses your location to record the route and statistics for rides you start.</string>
+	<key>NSLocationTemporaryUsageDescriptionDictionary</key>
+	<dict>
+		<key>RideRecording</key>
+		<string>Precise location lets RideScreen measure ride distance and save an accurate route.</string>
+	</dict>
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>location</string>

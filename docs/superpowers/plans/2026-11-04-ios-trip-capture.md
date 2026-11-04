@@ -16,13 +16,14 @@
 - Use only SwiftUI, Core Location, and Foundation; add no third-party packages.
 - Keep ride and route data on the device in Application Support JSON.
 - Use When In Use authorization and an explicit user start action.
+- If iOS grants reduced accuracy, request temporary full accuracy with a declared purpose string; explain the Settings path if declined.
 - Background recording requires `UIBackgroundModes`=`location` and `allowsBackgroundLocationUpdates` enabled only during recording.
 - Match Android thresholds: 35 m accuracy, 75 m/s jump limit, 0.8 m/s motion, 300 m and 30 seconds minimum ride, 10 minute gap bridge, 3 minute idle split, 30 second checkpoint.
 - Do not add or run tests in this slice; build/device validation needs macOS with Xcode, unavailable on the current host.
 
 ## Review Focus
 
-- Denied or restricted location access must leave recording stopped and explain the Settings path.
+- Denied/restricted or reduced-accuracy location access must leave recording stopped and explain the Settings path.
 - Stale, inaccurate, or implausible GPS fixes must not inflate distance.
 - Stopping or process termination must not silently erase a meaningful ride; checkpoints recover only once.
 - Short or stationary sessions must not appear as completed rides.
@@ -71,6 +72,7 @@
 - Produces: observable recorder state and explicit `startRecording()` / `stopRecording()` actions for the UI.
 
 - [ ] Configure Core Location for automotive navigation and request When In Use permission only after Start.
+- [ ] Request temporary full accuracy when permission is reduced; provide the ride-specific purpose string and Settings guidance if declined.
 - [ ] Start updates in the foreground and enable background updates only for an active ride.
 - [ ] Reject stale fixes, accuracy above 35 m, and point jumps faster than 75 m/s.
 - [ ] Compute live speed, distance, moving time, and maximum speed with the spec's motion and gap rules.
