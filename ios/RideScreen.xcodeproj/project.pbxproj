@@ -11,6 +11,10 @@
 		A00000000000000000000022 /* TripStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000025 /* TripStore.swift */; };
 		A00000000000000000000026 /* TripRecorder.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000027 /* TripRecorder.swift */; };
 		A00000000000000000000028 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000029 /* ContentView.swift */; };
+		A00000000000000000000030 /* BikePairing.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000031 /* BikePairing.swift */; };
+		A00000000000000000000032 /* BikeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000033 /* BikeView.swift */; };
+		A00000000000000000000034 /* QRScannerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000035 /* QRScannerView.swift */; };
+		A00000000000000000000037 /* TripDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000038 /* TripDetailView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -21,6 +25,11 @@
 		A00000000000000000000025 /* TripStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TripStore.swift; sourceTree = "<group>"; };
 		A00000000000000000000027 /* TripRecorder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TripRecorder.swift; sourceTree = "<group>"; };
 		A00000000000000000000029 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		A00000000000000000000031 /* BikePairing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BikePairing.swift; sourceTree = "<group>"; };
+		A00000000000000000000033 /* BikeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BikeView.swift; sourceTree = "<group>"; };
+		A00000000000000000000035 /* QRScannerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QRScannerView.swift; sourceTree = "<group>"; };
+		A00000000000000000000036 /* RideScreen.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = RideScreen.entitlements; sourceTree = "<group>"; };
+		A00000000000000000000038 /* TripDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TripDetailView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -47,6 +56,11 @@
 				A00000000000000000000025 /* TripStore.swift */,
 				A00000000000000000000027 /* TripRecorder.swift */,
 				A00000000000000000000029 /* ContentView.swift */,
+				A00000000000000000000031 /* BikePairing.swift */,
+				A00000000000000000000033 /* BikeView.swift */,
+				A00000000000000000000035 /* QRScannerView.swift */,
+				A00000000000000000000036 /* RideScreen.entitlements */,
+				A00000000000000000000038 /* TripDetailView.swift */,
 			);
 		};
 		A00000000000000000000003 /* Products */ = {
@@ -110,6 +124,10 @@
 				A00000000000000000000022 /* TripStore.swift in Sources */,
 				A00000000000000000000026 /* TripRecorder.swift in Sources */,
 				A00000000000000000000028 /* ContentView.swift in Sources */,
+				A00000000000000000000030 /* BikePairing.swift in Sources */,
+				A00000000000000000000032 /* BikeView.swift in Sources */,
+				A00000000000000000000034 /* QRScannerView.swift in Sources */,
+				A00000000000000000000037 /* TripDetailView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -144,6 +162,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = RideScreen/Info.plist;
+				CODE_SIGN_ENTITLEMENTS = RideScreen/RideScreen.entitlements;
 				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
 				PRODUCT_BUNDLE_IDENTIFIER = dev.zanderp.opencfmoto.ios;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -159,6 +178,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = RideScreen/Info.plist;
+				CODE_SIGN_ENTITLEMENTS = RideScreen/RideScreen.entitlements;
 				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
 				PRODUCT_BUNDLE_IDENTIFIER = dev.zanderp.opencfmoto.ios;
 				PRODUCT_NAME = "$(TARGET_NAME)";

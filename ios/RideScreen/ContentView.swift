@@ -20,6 +20,13 @@ struct ContentView: View {
             .tabItem {
                 Label("Trips", systemImage: "list.bullet.rectangle")
             }
+
+            NavigationStack {
+                BikeView()
+            }
+            .tabItem {
+                Label("Bike", systemImage: "bicycle.circle")
+            }
         }
     }
 }
@@ -191,20 +198,25 @@ private struct TripsView: View {
                 .listRowSeparator(.hidden)
             } else {
                 ForEach(store.trips) { ride in
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text(ride.startedAt.formatted(date: .abbreviated, time: .shortened))
-                            .font(.headline)
-                        HStack(spacing: 16) {
-                            Label("\((ride.distanceMeters / 1_000).formatted(.number.precision(.fractionLength(1)))) km", systemImage: "map")
-                            Label("\(durationText(ride.movingTime)) moving", systemImage: "clock")
-                        }
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                        Text("Max \(Int((ride.maxSpeedMetersPerSecond * 3.6).rounded())) km/h")
-                            .font(.caption.monospacedDigit())
+                    NavigationLink {
+                        TripDetailView(ride: ride)
+                    } label: {
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text(ride.startedAt.formatted(date: .abbreviated, time: .shortened))
+                                .font(.headline)
+                            HStack(spacing: 16) {
+                                Label("\((ride.distanceMeters / 1_000).formatted(.number.precision(.fractionLength(1)))) km", systemImage: "map")
+                                Label("\(durationText(ride.movingTime)) moving", systemImage: "clock")
+                            }
+                            .font(.caption)
                             .foregroundStyle(.secondary)
+                            Text("Max \(Int((ride.maxSpeedMetersPerSecond * 3.6).rounded())) km/h")
+                                .font(.caption.monospacedDigit())
+                                .foregroundStyle(.secondary)
+                        }
+                        .padding(.vertical, 4)
                     }
-                    .padding(.vertical, 4)
+                    .buttonStyle(.plain)
                 }
             }
         }

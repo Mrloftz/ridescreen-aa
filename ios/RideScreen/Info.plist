@@ -24,6 +24,8 @@
 	<true/>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>RideScreen uses your location to record the route and statistics for rides you start.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>RideScreen uses the camera only when you choose to scan a bike's Wi-Fi pairing QR.</string>
 	<key>NSLocationTemporaryUsageDescriptionDictionary</key>
 	<dict>
 		<key>RideRecording</key>
