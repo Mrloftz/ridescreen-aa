@@ -12,6 +12,7 @@ struct BikeView: View {
     @State private var connectingBikeID: UUID?
     @State private var projectingBike: Bike?
     @State private var manualWiFiSetup: BikeManualWiFiSetup?
+    @State private var manualJoinConfirmedBikeIDs: Set<UUID> = []
 
     var body: some View {
         ScrollView {
@@ -122,7 +123,29 @@ struct BikeView: View {
                         .buttonStyle(RideSecondaryButtonStyle())
 
                         if let setup = manualWiFiSetup, setup.bike.id == bike.id {
-                            BikeManualWiFiInstructions(ssid: bike.ssid, password: setup.password)
+                            BikeManualWiFiInstructions(
+                                ssid: bike.ssid,
+                                password: setup.password,
+                                onJoined: {
+                                    manualJoinConfirmedBikeIDs.insert(bike.id)
+                                    manualWiFiSetup = nil
+                                }
+                            )
+                        }
+
+                        if manualJoinConfirmedBikeIDs.contains(bike.id) {
+                            VStack(alignment: .leading, spacing: 6) {
+                                Label("Manual Wi-Fi join confirmed by you", systemImage: "checkmark.circle.fill")
+                                    .font(.subheadline.weight(.bold))
+                                    .foregroundStyle(RideScreenTheme.primary)
+                                Text("RideScreen cannot verify the current Wi-Fi network, and this build does not connect to the bike display.")
+                                    .font(.caption)
+                                    .foregroundStyle(RideScreenTheme.secondary)
+                                    .fixedSize(horizontal: false, vertical: true)
+                            }
+                            .padding(13)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .background(RideScreenTheme.elevated, in: RoundedRectangle(cornerRadius: 16))
                         }
                     }
                     .rideCard(padding: 15, radius: 20)
@@ -196,6 +219,10 @@ struct BikeView: View {
     }
 
     private func connect(_ bike: Bike) {
+        manualJoinConfirmedBikeIDs.remove(bike.id)
+        if manualWiFiSetup?.bike.id == bike.id {
+            manualWiFiSetup = nil
+        }
         connectingBikeID = bike.id
         Task {
             defer { connectingBikeID = nil }
@@ -223,6 +250,7 @@ struct BikeView: View {
         do {
             try store.remove(bike)
             BikeWiFiConnector.remove(ssid: bike.ssid)
+            manualJoinConfirmedBikeIDs.remove(bike.id)
             if manualWiFiSetup?.bike.id == bike.id {
                 manualWiFiSetup = nil
             }
@@ -234,6 +262,7 @@ struct BikeView: View {
 
     private func showManualWiFiSetup(for bike: Bike) {
         do {
+            manualJoinConfirmedBikeIDs.remove(bike.id)
             manualWiFiSetup = BikeManualWiFiSetup(
                 bike: bike,
                 password: try store.password(for: bike)
@@ -319,6 +348,7 @@ private struct BikePairingReviewView: View {
     @State private var isJoining = false
     @State private var statusMessage: String?
     @State private var showingManualWiFiInstructions = false
+    @State private var manualJoinConfirmed = false
 
     var body: some View {
         ScrollView {
@@ -374,7 +404,30 @@ private struct BikePairingReviewView: View {
                 }
 
                 if showingManualWiFiInstructions {
-                    BikeManualWiFiInstructions(ssid: pairing.ssid, password: pairing.password)
+                    BikeManualWiFiInstructions(
+                        ssid: pairing.ssid,
+                        password: pairing.password,
+                        onJoined: {
+                            manualJoinConfirmed = true
+                            showingManualWiFiInstructions = false
+                            statusMessage = nil
+                        }
+                    )
+                }
+
+                if manualJoinConfirmed {
+                    VStack(alignment: .leading, spacing: 6) {
+                        Label("Manual Wi-Fi join confirmed by you", systemImage: "checkmark.circle.fill")
+                            .font(.subheadline.weight(.bold))
+                            .foregroundStyle(RideScreenTheme.primary)
+                        Text("RideScreen cannot verify the current Wi-Fi network, and this build does not connect to the bike display.")
+                            .font(.caption)
+                            .foregroundStyle(RideScreenTheme.secondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                    .padding(13)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(RideScreenTheme.elevated, in: RoundedRectangle(cornerRadius: 16))
                 }
 
                 Button {
@@ -392,6 +445,9 @@ private struct BikePairingReviewView: View {
 
                 if savedBike != nil {
                     Button {
+                        if !showingManualWiFiInstructions {
+                            manualJoinConfirmed = false
+                        }
                         showingManualWiFiInstructions.toggle()
                     } label: {
                         Label(
@@ -419,6 +475,8 @@ private struct BikePairingReviewView: View {
     private func saveAndJoin() {
         isJoining = true
         statusMessage = nil
+        manualJoinConfirmed = false
+        showingManualWiFiInstructions = false
         Task {
             defer { isJoining = false }
             do {
@@ -458,6 +516,7 @@ private struct BikeManualWiFiSetup {
 private struct BikeManualWiFiInstructions: View {
     let ssid: String
     let password: String
+    let onJoined: () -> Void
 
     @State private var passwordCopied = false
 
@@ -481,6 +540,13 @@ private struct BikeManualWiFiInstructions: View {
                     .frame(maxWidth: .infinity, minHeight: 44)
             }
             .buttonStyle(RidePrimaryButtonStyle())
+
+            Button(action: onJoined) {
+                Label("I joined this Wi-Fi", systemImage: "checkmark.circle")
+                    .font(.subheadline.weight(.semibold))
+                    .frame(maxWidth: .infinity, minHeight: 42)
+            }
+            .buttonStyle(RideSecondaryButtonStyle())
 
             Text("Check Settings > Wi-Fi to confirm the iPhone joined this network. RideScreen cannot verify the connection from this screen.")
                 .font(.caption)

@@ -2,7 +2,7 @@
 
 The iOS app is a native SwiftUI application. Build and run it on macOS with Xcode by opening `RideScreen.xcodeproj` and selecting the RideScreen scheme.
 
-The Bike tab can scan Carbit / EasyConnect pairing QR codes that provide a Wi-Fi access point, save a bike locally, and ask iOS to join the network. If that request fails, RideScreen shows the iOS error code and manual steps to copy the password and join in Settings > Wi-Fi. Camera access is requested only when scanning. Bike names and SSIDs are stored in Application Support; Wi-Fi passwords are stored in Keychain. iOS presents its own approval prompt and remembers the configured network until it is removed from the Bike tab or iOS Settings. Wi-Fi Direct and phone-hotspot QR flows are not supported yet.
+The Bike tab can scan Carbit / EasyConnect pairing QR codes that provide a Wi-Fi access point, save a bike locally, and ask iOS to join the network. If that request fails, RideScreen expands manual steps on the pairing screen or saved-bike card: copy the password, join the SSID in Settings > Wi-Fi, return to RideScreen, and tap **I joined this Wi-Fi**. That records only the rider's confirmation; RideScreen cannot verify the current SSID or connect to the bike display in this build. Camera access is requested only when scanning. Bike names and SSIDs are stored in Application Support; Wi-Fi passwords are stored in Keychain. iOS presents its own approval prompt and remembers configurations added by RideScreen until they are removed from the Bike tab or iOS Settings. Removing a bike removes only RideScreen-managed Wi-Fi configuration; a network added manually in Settings remains there until removed in iOS Settings. Wi-Fi Direct and phone-hotspot QR flows are not supported yet.
 
 ## CarPlay diagnostics
 
@@ -10,7 +10,7 @@ The Bike tab can scan Carbit / EasyConnect pairing QR codes that provide a Wi-Fi
 
 On the test iPhone:
 
-1. Join the Zontes Wi-Fi in iOS Settings if automatic setup fails. The manual screen copies the bike password for you.
+1. Join the Zontes Wi-Fi in iOS Settings if automatic setup fails. The manual screen copies the bike password for you and lets you mark that manual step complete; this is not a connection check.
 2. The **CarPlay check** tests only this undocumented local URL; it does not verify iCarCast or project video to the bike.
 3. Tap **Share diagnostic** to export the endpoint response report.
 
